@@ -6,6 +6,10 @@ from sqlmodel import SQLModel
 
 from app.database import engine
 from app.routers import auth as auth_router
+from app.routers import experiences as experiences_router
+from app.routers import projects as projects_router
+from app.routers import proposals as proposals_router
+from app.routers import publications as publications_router
 
 
 @asynccontextmanager
@@ -30,6 +34,10 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(publications_router.router)
+app.include_router(projects_router.router)
+app.include_router(proposals_router.router)
+app.include_router(experiences_router.router)
 
 
 @app.get("/", tags=["Health"])
