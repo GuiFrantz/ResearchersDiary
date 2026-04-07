@@ -71,3 +71,25 @@ async def get_current_user(
         )
 
     return user
+
+
+ROLE_HIERARCHY = {
+    "researcher": 0,
+    "department_head": 1,
+    "institution_head": 2,
+    "admin": 3,
+}
+
+
+# Access Control helper
+def require_role(minimum_role: str):
+
+    async def checker(current_user: User = Depends(get_current_user)) -> User:
+        if ROLE_HIERARCHY.get(current_user.role, 0) < ROLE_HIERARCHY[minimum_role]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return current_user
+
+    return checker

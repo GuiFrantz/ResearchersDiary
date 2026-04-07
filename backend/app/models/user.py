@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
@@ -21,10 +21,16 @@ class User(SQLModel, table=True):
     orcid_id: Optional[str] = Field(default=None)
 
     institution_id: Optional[uuid.UUID] = Field(
-        default=None, sa_column=Column(pg_UUID(as_uuid=True), nullable=True)
+        default=None,
+        sa_column=Column(
+            pg_UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=True
+        ),
     )
     department_id: Optional[uuid.UUID] = Field(
-        default=None, sa_column=Column(pg_UUID(as_uuid=True), nullable=True)
+        default=None,
+        sa_column=Column(
+            pg_UUID(as_uuid=True), ForeignKey("departments.id"), nullable=True
+        ),
     )
 
     role: str = Field(default="researcher")

@@ -7,6 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth import get_current_user
 from app.database import get_session
 from app.models import Project, User
+from app.permissions import get_visible_records, has_permission, validate_visibility
 from app.schemas import ProjectCreate, ProjectRead, ProjectUpdate
 
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
@@ -18,6 +19,7 @@ async def create_project(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    validate_visibility(data.visibility, current_user)
     project = Project(user_id=current_user.id, **data.model_dump())
     session.add(project)
     await session.commit()
@@ -30,10 +32,7 @@ async def list_projects(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Project).where(Project.user_id == current_user.id)
-    )
-    return result.all()
+    return await get_visible_records(Project, current_user, session)
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
@@ -44,7 +43,9 @@ async def get_project(
 ):
     result = await session.exec(select(Project).where(Project.id == project_id))
     project = result.first()
-    if project is None or project.user_id != current_user.id:
+    if project is None or not await has_permission(
+        current_user, "researcher", session, record=project
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
@@ -60,12 +61,16 @@ async def update_project(
 ):
     result = await session.exec(select(Project).where(Project.id == project_id))
     project = result.first()
-    if project is None or project.user_id != current_user.id:
+    if project is None or not await has_permission(
+        current_user, "researcher", session, record=project, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
     patch_data = data.model_dump(exclude_unset=True)
+    if "visibility" in patch_data:
+        validate_visibility(patch_data["visibility"], current_user)
 
     project.sqlmodel_update(patch_data)
     session.add(project)
@@ -82,7 +87,9 @@ async def delete_project(
 ):
     result = await session.exec(select(Project).where(Project.id == project_id))
     project = result.first()
-    if project is None or project.user_id != current_user.id:
+    if project is None or not await has_permission(
+        current_user, "researcher", session, record=project, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )

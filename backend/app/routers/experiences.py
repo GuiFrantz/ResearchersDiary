@@ -7,6 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth import get_current_user
 from app.database import get_session
 from app.models import Experience, User
+from app.permissions import get_visible_records, has_permission, validate_visibility
 from app.schemas import ExperienceCreate, ExperienceRead, ExperienceUpdate
 
 router = APIRouter(prefix="/api/experiences", tags=["Experiences"])
@@ -18,6 +19,7 @@ async def create_experience(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    validate_visibility(data.visibility, current_user)
     experience = Experience(user_id=current_user.id, **data.model_dump())
     session.add(experience)
     await session.commit()
@@ -30,10 +32,7 @@ async def list_experiences(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Experience).where(Experience.user_id == current_user.id)
-    )
-    return result.all()
+    return await get_visible_records(Experience, current_user, session)
 
 
 @router.get("/{experience_id}", response_model=ExperienceRead)
@@ -46,7 +45,9 @@ async def get_experience(
         select(Experience).where(Experience.id == experience_id)
     )
     experience = result.first()
-    if experience is None or experience.user_id != current_user.id:
+    if experience is None or not await has_permission(
+        current_user, "researcher", session, record=experience
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Experience not found"
         )
@@ -64,12 +65,16 @@ async def update_experience(
         select(Experience).where(Experience.id == experience_id)
     )
     experience = result.first()
-    if experience is None or experience.user_id != current_user.id:
+    if experience is None or not await has_permission(
+        current_user, "researcher", session, record=experience, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Experience not found"
         )
 
     patch_data = data.model_dump(exclude_unset=True)
+    if "visibility" in patch_data:
+        validate_visibility(patch_data["visibility"], current_user)
 
     experience.sqlmodel_update(patch_data)
     session.add(experience)
@@ -88,7 +93,9 @@ async def delete_experience(
         select(Experience).where(Experience.id == experience_id)
     )
     experience = result.first()
-    if experience is None or experience.user_id != current_user.id:
+    if experience is None or not await has_permission(
+        current_user, "researcher", session, record=experience, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Experience not found"
         )

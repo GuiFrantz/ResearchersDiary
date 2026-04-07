@@ -8,6 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth import get_current_user
 from app.database import get_session
 from app.models import Publication, User
+from app.permissions import get_visible_records, has_permission, validate_visibility
 from app.schemas import PublicationCreate, PublicationRead, PublicationUpdate
 
 router = APIRouter(prefix="/api/publications", tags=["Publications"])
@@ -19,6 +20,7 @@ async def create_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    validate_visibility(data.visibility, current_user)
     publication = Publication(user_id=current_user.id, **data.model_dump())
     try:
         session.add(publication)
@@ -38,10 +40,7 @@ async def list_publications(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Publication).where(Publication.user_id == current_user.id)
-    )
-    return result.all()
+    return await get_visible_records(Publication, current_user, session)
 
 
 @router.get("/{publication_id}", response_model=PublicationRead)
@@ -54,7 +53,9 @@ async def get_publication(
         select(Publication).where(Publication.id == publication_id)
     )
     publication = result.first()
-    if publication is None or publication.user_id != current_user.id:
+    if publication is None or not await has_permission(
+        current_user, "researcher", session, record=publication
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
         )
@@ -72,12 +73,16 @@ async def update_publication(
         select(Publication).where(Publication.id == publication_id)
     )
     publication = result.first()
-    if publication is None or publication.user_id != current_user.id:
+    if publication is None or not await has_permission(
+        current_user, "researcher", session, record=publication, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
         )
 
     patch_data = data.model_dump(exclude_unset=True)
+    if "visibility" in patch_data:
+        validate_visibility(patch_data["visibility"], current_user)
 
     publication.sqlmodel_update(patch_data)
     try:
@@ -103,7 +108,9 @@ async def delete_publication(
         select(Publication).where(Publication.id == publication_id)
     )
     publication = result.first()
-    if publication is None or publication.user_id != current_user.id:
+    if publication is None or not await has_permission(
+        current_user, "researcher", session, record=publication, require_owner=True
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
         )

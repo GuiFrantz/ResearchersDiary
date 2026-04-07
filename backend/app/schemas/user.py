@@ -21,6 +21,18 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class AssignInstitution(BaseModel):
+    institution_id: Optional[uuid.UUID] = None
+
+
+class AssignDepartment(BaseModel):
+    department_id: Optional[uuid.UUID] = None
+
+
+class AssignRole(BaseModel):
+    role: str
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
