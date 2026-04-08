@@ -24,11 +24,11 @@ class Token(BaseModel):
 
 
 class AssignInstitution(BaseModel):
-    institution_id: Optional[uuid.UUID] = None
+    institution_id: uuid.UUID
 
 
 class AssignDepartment(BaseModel):
-    department_id: Optional[uuid.UUID] = None
+    department_id: uuid.UUID
 
 
 class AssignRole(BaseModel):

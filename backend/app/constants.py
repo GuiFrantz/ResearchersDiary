@@ -70,6 +70,12 @@ class Errors:
     PROPOSAL_NOT_FOUND = "Proposal not found"
     EXPERIENCE_NOT_FOUND = "Experience not found"
 
+    # Assignment
+    USER_ALREADY_IN_INSTITUTION = "User is already assigned to a different institution"
+    USER_NOT_IN_INSTITUTION = "User must be in the institution before being assigned to a department"
+    USER_NOT_IN_ANY_INSTITUTION = "User is not assigned to any institution"
+    USER_NOT_IN_ANY_DEPARTMENT = "User is not assigned to any department"
+
     # Other
     INSTITUTION_HAS_USERS = "Institution still has assigned users"
     DEPARTMENT_HAS_USERS = "Department still has assigned users"

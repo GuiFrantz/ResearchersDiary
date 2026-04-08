@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import ROLE_HIERARCHY
 from app.constants import UserRole, Visibility
-from app.models import Department, User
+from app.models import Department, Institution, User
 
 
 # Helpers
@@ -137,3 +137,31 @@ async def get_records(
         stmt = stmt.where(model_class.id == record_id)
     result = await session.exec(stmt)
     return result.first() if record_id is not None else result.all()
+
+
+async def get_institution(session: AsyncSession, institution_id: uuid.UUID):
+    result = await session.exec(select(Institution).where(Institution.id == institution_id))
+    return result.first()
+
+
+async def get_department(session: AsyncSession, department_id: uuid.UUID):
+    result = await session.exec(select(Department).where(Department.id == department_id))
+    return result.first()
+
+
+async def get_users(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID | None = None,
+    institution_id: uuid.UUID | None = None,
+    department_id: uuid.UUID | None = None,
+):
+    stmt = select(User)
+    if user_id is not None:
+        stmt = stmt.where(User.id == user_id)
+    if department_id is not None:
+        stmt = stmt.where(User.department_id == department_id)
+    elif institution_id is not None:
+        stmt = stmt.where(User.institution_id == institution_id)
+    result = await session.exec(stmt)
+    return result.first() if user_id is not None else result.all()
