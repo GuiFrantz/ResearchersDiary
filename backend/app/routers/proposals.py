@@ -7,7 +7,7 @@ from app.auth import get_current_user
 from app.constants import ApiPrefix, Errors
 from app.database import get_session
 from app.models import Proposal, User
-from app.permissions import get_records
+from app.queries import get_records
 from app.schemas import ProposalCreate, ProposalRead, ProposalUpdate
 
 router = APIRouter(prefix=ApiPrefix.PROPOSALS, tags=["Proposals"])

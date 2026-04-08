@@ -7,7 +7,7 @@ from app.auth import get_current_user
 from app.constants import ApiPrefix, Errors
 from app.database import get_session
 from app.models import Experience, User
-from app.permissions import get_records
+from app.queries import get_records
 from app.schemas import ExperienceCreate, ExperienceRead, ExperienceUpdate
 
 router = APIRouter(prefix=ApiPrefix.EXPERIENCES, tags=["Experiences"])

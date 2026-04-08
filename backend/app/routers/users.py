@@ -8,7 +8,8 @@ from app.auth import ROLE_HIERARCHY, get_current_user, require_role
 from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import User
-from app.permissions import get_department, get_institution, get_users, has_permission
+from app.permissions import has_permission
+from app.queries import get_department, get_institution, get_users
 from app.schemas import AssignDepartment, AssignInstitution, AssignRole, UserRead
 
 router = APIRouter(prefix=ApiPrefix.USERS, tags=["Users"])
