@@ -6,6 +6,8 @@ from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
+from app.constants import AuthProvider, UserRole
+
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -17,7 +19,7 @@ class User(SQLModel, table=True):
     email: str = Field(sa_column=Column(String, unique=True, nullable=False))
     name: Optional[str] = Field(default=None)
     password_hash: Optional[str] = Field(default=None)
-    auth_provider: str = Field(default="local")
+    auth_provider: AuthProvider = Field(default=AuthProvider.LOCAL)
     orcid_id: Optional[str] = Field(default=None)
 
     institution_id: Optional[uuid.UUID] = Field(
@@ -33,6 +35,6 @@ class User(SQLModel, table=True):
         ),
     )
 
-    role: str = Field(default="researcher")
+    role: UserRole = Field(default=UserRole.RESEARCHER)
     position_title: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)

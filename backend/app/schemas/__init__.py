@@ -1,21 +1,50 @@
+from .department import DepartmentCreate, DepartmentRead, DepartmentUpdate
+from .experience import ExperienceCreate, ExperienceRead, ExperienceUpdate
+from .institution import InstitutionCreate, InstitutionRead, InstitutionUpdate
+from .project import ProjectCreate, ProjectRead, ProjectUpdate
+from .proposal import ProposalCreate, ProposalRead, ProposalUpdate
+from .publication import PublicationCreate, PublicationRead, PublicationUpdate
 from .user import (
-    Token, UserLogin, UserRead, UserRegister,
-    AssignInstitution, AssignDepartment, AssignRole,
+    AssignDepartment,
+    AssignInstitution,
+    AssignRole,
+    Token,
+    UserLogin,
+    UserRead,
+    UserRegister,
 )
-from .institution import InstitutionCreate, InstitutionUpdate, InstitutionRead
-from .department import DepartmentCreate, DepartmentUpdate, DepartmentRead
-from .publication import PublicationCreate, PublicationUpdate, PublicationRead
-from .project import ProjectCreate, ProjectUpdate, ProjectRead
-from .proposal import ProposalCreate, ProposalUpdate, ProposalRead
-from .experience import ExperienceCreate, ExperienceUpdate, ExperienceRead
 
 __all__ = [
-    "UserRegister", "UserLogin", "Token", "UserRead",
-    "AssignInstitution", "AssignDepartment", "AssignRole",
-    "InstitutionCreate", "InstitutionUpdate", "InstitutionRead",
-    "DepartmentCreate", "DepartmentUpdate", "DepartmentRead",
-    "PublicationCreate", "PublicationUpdate", "PublicationRead",
-    "ProjectCreate", "ProjectUpdate", "ProjectRead",
-    "ProposalCreate", "ProposalUpdate", "ProposalRead",
-    "ExperienceCreate", "ExperienceUpdate", "ExperienceRead",
+    # User
+    "UserRegister",
+    "UserLogin",
+    "Token",
+    "UserRead",
+    "AssignInstitution",
+    "AssignDepartment",
+    "AssignRole",
+    # Institution
+    "InstitutionCreate",
+    "InstitutionUpdate",
+    "InstitutionRead",
+    # Department
+    "DepartmentCreate",
+    "DepartmentUpdate",
+    "DepartmentRead",
+    # Publication
+    "PublicationCreate",
+    "PublicationUpdate",
+    "PublicationRead",
+    # Project
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectRead",
+    # Proposal
+    "ProposalCreate",
+    "ProposalUpdate",
+    "ProposalRead",
+    # Experience
+    "ExperienceCreate",
+    "ExperienceUpdate",
+    "ExperienceRead",
 ]

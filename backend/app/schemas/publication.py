@@ -4,6 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from app.constants import Visibility
+
 
 class PublicationCreate(BaseModel):
     title: str
@@ -13,7 +15,7 @@ class PublicationCreate(BaseModel):
     doi: Optional[str] = None
     url: Optional[str] = None
     status: Optional[str] = None
-    visibility: str = "private"
+    visibility: Visibility = Visibility.PRIVATE
     is_imported: bool = False
 
 
@@ -25,7 +27,7 @@ class PublicationUpdate(BaseModel):
     doi: Optional[str] = None
     url: Optional[str] = None
     status: Optional[str] = None
-    visibility: Optional[str] = None
+    visibility: Optional[Visibility] = None
     is_imported: Optional[bool] = None
 
 
@@ -41,6 +43,6 @@ class PublicationRead(BaseModel):
     doi: Optional[str]
     url: Optional[str]
     status: Optional[str]
-    visibility: str
+    visibility: Visibility
     is_imported: bool
     created_at: datetime

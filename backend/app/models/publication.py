@@ -7,6 +7,8 @@ from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
+from app.constants import Visibility
+
 
 class Publication(SQLModel, table=True):
     __tablename__ = "publications"
@@ -27,6 +29,6 @@ class Publication(SQLModel, table=True):
     )
     url: Optional[str] = Field(default=None)
     status: Optional[str] = Field(default=None)
-    visibility: str = Field(default="private")
+    visibility: Visibility = Field(default=Visibility.PRIVATE)
     is_imported: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

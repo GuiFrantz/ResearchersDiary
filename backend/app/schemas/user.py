@@ -4,6 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
 
+from app.constants import UserRole
+
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -30,7 +32,7 @@ class AssignDepartment(BaseModel):
 
 
 class AssignRole(BaseModel):
-    role: str
+    role: UserRole
 
 
 class UserRead(BaseModel):
@@ -39,7 +41,7 @@ class UserRead(BaseModel):
     id: uuid.UUID
     email: str
     name: Optional[str]
-    role: str
+    role: UserRole
     position_title: Optional[str]
     orcid_id: Optional[str]
     institution_id: Optional[uuid.UUID]

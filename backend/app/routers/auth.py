@@ -8,11 +8,12 @@ from app.auth import (
     hash_password,
     verify_password,
 )
+from app.constants import ApiPrefix, AuthProvider, Errors
 from app.database import get_session
 from app.models import User
 from app.schemas import Token, UserRead, UserRegister, UserLogin
 
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
+router = APIRouter(prefix=ApiPrefix.AUTH, tags=["Auth"])
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -21,14 +22,14 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
     if result.first() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+            detail=Errors.EMAIL_ALREADY_REGISTERED,
         )
 
     user = User(
         email=data.email,
         name=data.name,
         password_hash=hash_password(data.password.get_secret_value()),
-        auth_provider="local",
+        auth_provider=AuthProvider.LOCAL,
     )
     session.add(user)
     await session.commit()
@@ -45,7 +46,7 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     if user is None or not verify_password(data.password.get_secret_value(), user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail=Errors.INVALID_CREDENTIALS,
         )
 
     return Token(access_token=create_access_token(user.id))

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
+from app.constants import APP_TITLE, APP_VERSION, CORS_ORIGINS
 from app.database import engine
 from app.routers import auth as auth_router
 from app.routers import departments as departments_router
@@ -23,14 +24,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Researcher's Diary",
-    version="0.1.0",
+    title=APP_TITLE,
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

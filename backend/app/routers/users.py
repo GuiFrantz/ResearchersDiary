@@ -6,12 +6,13 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import ROLE_HIERARCHY, get_current_user, require_role
+from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Department, Institution, User
 from app.permissions import has_permission
 from app.schemas import AssignDepartment, AssignInstitution, AssignRole, UserRead
 
-router = APIRouter(prefix="/api/users", tags=["Users"])
+router = APIRouter(prefix=ApiPrefix.USERS, tags=["Users"])
 
 
 @router.get("/", response_model=list[UserRead])
@@ -26,7 +27,7 @@ async def list_users(
         stmt = stmt.where(User.department_id == department_id)
     elif institution_id is not None:
         stmt = stmt.where(User.institution_id == institution_id)
-    elif current_user.role == "admin":
+    elif current_user.role == UserRole.ADMIN:
         pass  # admin sees all users
     elif current_user.institution_id is not None:
         stmt = stmt.where(User.institution_id == current_user.institution_id)
@@ -48,7 +49,7 @@ async def get_user(
     user = result.first()
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
     return user
 
@@ -58,13 +59,13 @@ async def assign_institution(
     user_id: uuid.UUID,
     data: AssignInstitution,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
     result = await session.exec(select(User).where(User.id == user_id))
     target_user = result.first()
     if target_user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
     if data.institution_id is not None:
@@ -74,28 +75,28 @@ async def assign_institution(
         if inst_result.first() is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Institution not found",
+                detail=Errors.INSTITUTION_NOT_FOUND,
             )
         if not await has_permission(
             current_user,
-            "institution_head",
+            UserRole.INSTITUTION_HEAD,
             session,
             institution_id=data.institution_id,
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
     else:
         if not await has_permission(
             current_user,
-            "institution_head",
+            UserRole.INSTITUTION_HEAD,
             session,
             institution_id=target_user.institution_id,
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
 
     target_user.institution_id = data.institution_id
@@ -112,13 +113,13 @@ async def assign_department(
     user_id: uuid.UUID,
     data: AssignDepartment,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("department_head")),
+    current_user: User = Depends(require_role(UserRole.DEPARTMENT_HEAD)),
 ):
     result = await session.exec(select(User).where(User.id == user_id))
     target_user = result.first()
     if target_user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
     if data.department_id is not None:
@@ -129,15 +130,15 @@ async def assign_department(
         if department is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Department not found",
+                detail=Errors.DEPARTMENT_NOT_FOUND,
             )
 
         if not await has_permission(
-            current_user, "department_head", session, department_id=data.department_id
+            current_user, UserRole.DEPARTMENT_HEAD, session, department_id=data.department_id
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
 
         if target_user.institution_id is None:
@@ -145,18 +146,18 @@ async def assign_department(
         elif target_user.institution_id != department.institution_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
     else:
         if target_user.department_id is not None and not await has_permission(
             current_user,
-            "department_head",
+            UserRole.DEPARTMENT_HEAD,
             session,
             department_id=target_user.department_id,
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
 
     target_user.department_id = data.department_id
@@ -171,19 +172,19 @@ async def assign_role(
     user_id: uuid.UUID,
     data: AssignRole,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
     if data.role not in ROLE_HIERARCHY:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role",
+            detail=Errors.INVALID_ROLE,
         )
 
     result = await session.exec(select(User).where(User.id == user_id))
     target_user = result.first()
     if target_user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
     if target_user.id == current_user.id:
@@ -192,21 +193,21 @@ async def assign_role(
             detail="Insufficient permissions",
         )
 
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         if ROLE_HIERARCHY[data.role] >= ROLE_HIERARCHY[current_user.role]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
         if not await has_permission(
             current_user,
-            "institution_head",
+            UserRole.INSTITUTION_HEAD,
             session,
             institution_id=target_user.institution_id,
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
 
     target_user.role = data.role

@@ -6,19 +6,20 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import get_current_user, require_role
+from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Department, Institution, User
 from app.permissions import has_permission
 from app.schemas import DepartmentCreate, DepartmentRead, DepartmentUpdate
 
-router = APIRouter(prefix="/api/departments", tags=["Departments"])
+router = APIRouter(prefix=ApiPrefix.DEPARTMENTS, tags=["Departments"])
 
 
 @router.post("/", response_model=DepartmentRead, status_code=status.HTTP_201_CREATED)
 async def create_department(
     data: DepartmentCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
 
     result = await session.exec(
@@ -26,15 +27,15 @@ async def create_department(
     )
     if result.first() is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Institution not found"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=Errors.INSTITUTION_NOT_FOUND
         )
 
     if not await has_permission(
-        current_user, "institution_head", session, institution_id=data.institution_id
+        current_user, UserRole.INSTITUTION_HEAD, session, institution_id=data.institution_id
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
     department = Department(**data.model_dump())
@@ -51,7 +52,7 @@ async def list_departments(
     current_user: User = Depends(get_current_user),
 ):
     stmt = select(Department)
-    if current_user.role == "admin":
+    if current_user.role == UserRole.ADMIN:
         if institution_id is not None:
             stmt = stmt.where(Department.institution_id == institution_id)
     elif current_user.institution_id is not None:
@@ -74,13 +75,13 @@ async def get_department(
     department = result.first()
     if department is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Department not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.DEPARTMENT_NOT_FOUND
         )
     if not await has_permission(
-        current_user, "researcher", session, institution_id=department.institution_id
+        current_user, UserRole.RESEARCHER, session, institution_id=department.institution_id
     ):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Department not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.DEPARTMENT_NOT_FOUND
         )
     return department
 
@@ -90,7 +91,7 @@ async def update_department(
     department_id: uuid.UUID,
     data: DepartmentUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("department_head")),
+    current_user: User = Depends(require_role(UserRole.DEPARTMENT_HEAD)),
 ):
     result = await session.exec(
         select(Department).where(Department.id == department_id)
@@ -98,18 +99,18 @@ async def update_department(
     department = result.first()
     if department is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Department not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.DEPARTMENT_NOT_FOUND
         )
 
     if not await has_permission(
         current_user,
-        "department_head",
+        UserRole.DEPARTMENT_HEAD,
         session,
         department_id=department.id,
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
     patch_data = data.model_dump(exclude_unset=True)
@@ -124,7 +125,7 @@ async def update_department(
 async def delete_department(
     department_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
     result = await session.exec(
         select(Department).where(Department.id == department_id)
@@ -132,18 +133,18 @@ async def delete_department(
     department = result.first()
     if department is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Department not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.DEPARTMENT_NOT_FOUND
         )
 
     if not await has_permission(
         current_user,
-        "institution_head",
+        UserRole.INSTITUTION_HEAD,
         session,
         institution_id=department.institution_id,
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
     user_result = await session.exec(
@@ -152,7 +153,7 @@ async def delete_department(
     if user_result.first() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Department still has assigned users",
+            detail=Errors.DEPARTMENT_HAS_USERS,
         )
 
     await session.delete(department)

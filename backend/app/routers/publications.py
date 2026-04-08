@@ -1,17 +1,16 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import get_current_user
+from app.constants import ApiPrefix, Errors
 from app.database import get_session
 from app.models import Publication, User
-from app.permissions import get_visible_records, has_permission, validate_visibility
+from app.permissions import get_records, validate_visibility
 from app.schemas import PublicationCreate, PublicationRead, PublicationUpdate
 
-router = APIRouter(prefix="/api/publications", tags=["Publications"])
+router = APIRouter(prefix=ApiPrefix.PUBLICATIONS, tags=["Publications"])
 
 
 @router.post("/", response_model=PublicationRead, status_code=status.HTTP_201_CREATED)
@@ -22,16 +21,9 @@ async def create_publication(
 ):
     validate_visibility(data.visibility, current_user)
     publication = Publication(user_id=current_user.id, **data.model_dump())
-    try:
-        session.add(publication)
-        await session.commit()
-        await session.refresh(publication)
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A publication with this DOI already exists",
-        )
+    session.add(publication)
+    await session.commit()
+    await session.refresh(publication)
     return publication
 
 
@@ -40,7 +32,7 @@ async def list_publications(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await get_visible_records(Publication, current_user, session)
+    return await get_records(Publication, current_user, session)
 
 
 @router.get("/{publication_id}", response_model=PublicationRead)
@@ -49,15 +41,10 @@ async def get_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Publication).where(Publication.id == publication_id)
-    )
-    publication = result.first()
-    if publication is None or not await has_permission(
-        current_user, "researcher", session, record=publication
-    ):
+    publication = await get_records(Publication, current_user, session, record_id=publication_id)
+    if publication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
         )
     return publication
 
@@ -69,32 +56,18 @@ async def update_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Publication).where(Publication.id == publication_id)
-    )
-    publication = result.first()
-    if publication is None or not await has_permission(
-        current_user, "researcher", session, record=publication, require_owner=True
-    ):
+    publication = await get_records(Publication, current_user, session, record_id=publication_id, owner_only=True)
+    if publication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
         )
 
-    patch_data = data.model_dump(exclude_unset=True)
-    if "visibility" in patch_data:
-        validate_visibility(patch_data["visibility"], current_user)
+    updated_data = data.model_dump(exclude_unset=True)
 
-    publication.sqlmodel_update(patch_data)
-    try:
-        session.add(publication)
-        await session.commit()
-        await session.refresh(publication)
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A publication with this DOI already exists",
-        )
+    publication.sqlmodel_update(updated_data)
+    session.add(publication)
+    await session.commit()
+    await session.refresh(publication)
     return publication
 
 
@@ -104,15 +77,10 @@ async def delete_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Publication).where(Publication.id == publication_id)
-    )
-    publication = result.first()
-    if publication is None or not await has_permission(
-        current_user, "researcher", session, record=publication, require_owner=True
-    ):
+    publication = await get_records(Publication, current_user, session, record_id=publication_id, owner_only=True)
+    if publication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
         )
     await session.delete(publication)
     await session.commit()

@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.constants import Errors, UserRole
 from app.database import get_session
 from app.models import User
 
@@ -58,7 +59,7 @@ async def get_current_user(
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=Errors.INVALID_TOKEN,
         )
 
     result = await session.exec(select(User).where(User.id == user_id))
@@ -67,28 +68,28 @@ async def get_current_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail=Errors.USER_NOT_FOUND,
         )
 
     return user
 
 
 ROLE_HIERARCHY = {
-    "researcher": 0,
-    "department_head": 1,
-    "institution_head": 2,
-    "admin": 3,
+    UserRole.RESEARCHER: 0,
+    UserRole.DEPARTMENT_HEAD: 1,
+    UserRole.INSTITUTION_HEAD: 2,
+    UserRole.ADMIN: 3,
 }
 
 
 # Access Control helper
-def require_role(minimum_role: str):
+def require_role(minimum_role: UserRole):
 
     async def checker(current_user: User = Depends(get_current_user)) -> User:
         if ROLE_HIERARCHY.get(current_user.role, 0) < ROLE_HIERARCHY[minimum_role]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
         return current_user
 

@@ -5,14 +5,16 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from app.constants import ProjectStatus, Visibility
+
 
 class ProjectCreate(BaseModel):
     title: str
     agency: Optional[str] = None
     grant_number: Optional[str] = None
     role: Optional[str] = None
-    status: Optional[str] = None
-    visibility: str = "private"
+    status: Optional[ProjectStatus] = None
+    visibility: Visibility = Visibility.PRIVATE
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     budget: Optional[Decimal] = None
@@ -23,8 +25,8 @@ class ProjectUpdate(BaseModel):
     agency: Optional[str] = None
     grant_number: Optional[str] = None
     role: Optional[str] = None
-    status: Optional[str] = None
-    visibility: Optional[str] = None
+    status: Optional[ProjectStatus] = None
+    visibility: Optional[Visibility] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     budget: Optional[Decimal] = None
@@ -39,8 +41,8 @@ class ProjectRead(BaseModel):
     agency: Optional[str]
     grant_number: Optional[str]
     role: Optional[str]
-    status: Optional[str]
-    visibility: str
+    status: Optional[ProjectStatus]
+    visibility: Visibility
     start_date: Optional[date]
     end_date: Optional[date]
     budget: Optional[Decimal]

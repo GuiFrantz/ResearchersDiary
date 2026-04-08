@@ -7,6 +7,8 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
+from app.constants import Visibility
+
 
 class Experience(SQLModel, table=True):
     __tablename__ = "experiences"
@@ -22,7 +24,7 @@ class Experience(SQLModel, table=True):
     organization: Optional[str] = Field(default=None)
     role_title: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    visibility: str = Field(default="private")
+    visibility: Visibility = Field(default=Visibility.PRIVATE)
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     is_current: bool = Field(default=False)

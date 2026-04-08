@@ -5,19 +5,20 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import get_current_user, require_role
+from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Institution, User
 from app.permissions import has_permission
 from app.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
 
-router = APIRouter(prefix="/api/institutions", tags=["Institutions"])
+router = APIRouter(prefix=ApiPrefix.INSTITUTIONS, tags=["Institutions"])
 
 
 @router.post("/", response_model=InstitutionRead, status_code=status.HTTP_201_CREATED)
 async def create_institution(
     data: InstitutionCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
 ):
     institution = Institution(**data.model_dump())
     session.add(institution)
@@ -29,7 +30,7 @@ async def create_institution(
 @router.get("/", response_model=list[InstitutionRead])
 async def list_institutions(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
 ):
     result = await session.exec(select(Institution))
     return result.all()
@@ -47,13 +48,13 @@ async def get_institution(
     institution = result.first()
     if institution is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
         )
     if not await has_permission(
-        current_user, "researcher", session, institution_id=institution.id
+        current_user, UserRole.RESEARCHER, session, institution_id=institution.id
     ):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
         )
     return institution
 
@@ -63,7 +64,7 @@ async def update_institution(
     institution_id: uuid.UUID,
     data: InstitutionUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
     result = await session.exec(
         select(Institution).where(Institution.id == institution_id)
@@ -71,15 +72,15 @@ async def update_institution(
     institution = result.first()
     if institution is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
         )
 
     if not await has_permission(
-        current_user, "institution_head", session, institution_id=institution.id
+        current_user, UserRole.INSTITUTION_HEAD, session, institution_id=institution.id
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
     patch_data = data.model_dump(exclude_unset=True)
@@ -94,7 +95,7 @@ async def update_institution(
 async def delete_institution(
     institution_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role("institution_head")),
+    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
     result = await session.exec(
         select(Institution).where(Institution.id == institution_id)
@@ -102,15 +103,15 @@ async def delete_institution(
     institution = result.first()
     if institution is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
         )
 
     if not await has_permission(
-        current_user, "institution_head", session, institution_id=institution.id
+        current_user, UserRole.INSTITUTION_HEAD, session, institution_id=institution.id
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
     user_result = await session.exec(
@@ -119,7 +120,7 @@ async def delete_institution(
     if user_result.first() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Institution still has assigned users",
+            detail=Errors.INSTITUTION_HAS_USERS,
         )
 
     await session.delete(institution)

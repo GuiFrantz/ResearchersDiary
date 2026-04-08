@@ -7,6 +7,8 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
+from app.constants import ProposalStatus, Visibility
+
 
 class Proposal(SQLModel, table=True):
     __tablename__ = "proposals"
@@ -22,8 +24,8 @@ class Proposal(SQLModel, table=True):
     funding_body: Optional[str] = Field(default=None)
     reference: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
-    status: Optional[str] = Field(default=None)
-    visibility: str = Field(default="private")
+    status: Optional[ProposalStatus] = Field(default=None)
+    visibility: Visibility = Field(default=Visibility.PRIVATE)
     submission_date: Optional[date] = Field(default=None)
     decision_date: Optional[date] = Field(default=None)
     project_id: Optional[uuid.UUID] = Field(

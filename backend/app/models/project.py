@@ -8,6 +8,8 @@ from sqlalchemy import Column, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
+from app.constants import ProjectStatus, Visibility
+
 
 class Project(SQLModel, table=True):
     __tablename__ = "projects"
@@ -23,8 +25,8 @@ class Project(SQLModel, table=True):
     agency: Optional[str] = Field(default=None)
     grant_number: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
-    status: Optional[str] = Field(default=None)
-    visibility: str = Field(default="private")
+    status: Optional[ProjectStatus] = Field(default=None)
+    visibility: Visibility = Field(default=Visibility.PRIVATE)
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     budget: Optional[Decimal] = Field(
