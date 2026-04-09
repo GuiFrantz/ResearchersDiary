@@ -1,7 +1,6 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import get_current_user, require_role
@@ -9,6 +8,7 @@ from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Institution, User
 from app.permissions import has_permission
+from app.queries import get_institutions, get_users
 from app.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
 
 router = APIRouter(prefix=ApiPrefix.INSTITUTIONS, tags=["Institutions"])
@@ -32,8 +32,7 @@ async def list_institutions(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
 ):
-    result = await session.exec(select(Institution))
-    return result.all()
+    return await get_institutions(session)
 
 
 @router.get("/{institution_id}", response_model=InstitutionRead)
@@ -42,10 +41,7 @@ async def get_institution(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    institution = result.first()
+    institution = await get_institutions(session, institution_id)
     if institution is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
@@ -66,10 +62,7 @@ async def update_institution(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
-    result = await session.exec(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    institution = result.first()
+    institution = await get_institutions(session, institution_id)
     if institution is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
@@ -83,8 +76,8 @@ async def update_institution(
             detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
-    patch_data = data.model_dump(exclude_unset=True)
-    institution.sqlmodel_update(patch_data)
+    updated_data = data.model_dump(exclude_unset=True)
+    institution.sqlmodel_update(updated_data)
     session.add(institution)
     await session.commit()
     await session.refresh(institution)
@@ -97,10 +90,7 @@ async def delete_institution(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
 ):
-    result = await session.exec(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    institution = result.first()
+    institution = await get_institutions(session, institution_id)
     if institution is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
@@ -114,10 +104,7 @@ async def delete_institution(
             detail=Errors.INSUFFICIENT_PERMISSIONS,
         )
 
-    user_result = await session.exec(
-        select(User).where(User.institution_id == institution_id).limit(1)
-    )
-    if user_result.first() is not None:
+    if len(await get_users(session, institution_id=institution_id)) > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Errors.INSTITUTION_HAS_USERS,

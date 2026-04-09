@@ -9,7 +9,7 @@ from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import User
 from app.permissions import has_permission
-from app.queries import get_department, get_institution, get_users
+from app.queries import get_departments, get_institutions, get_users
 from app.schemas import AssignDepartment, AssignInstitution, AssignRole, UserRead
 
 router = APIRouter(prefix=ApiPrefix.USERS, tags=["Users"])
@@ -23,17 +23,28 @@ async def list_users(
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == UserRole.ADMIN:
-        return await get_users(session, department_id=department_id, institution_id=institution_id)
+        return await get_users(
+            session, department_id=department_id, institution_id=institution_id
+        )
 
     if department_id is not None:
-        department = await get_department(session, department_id)
-        if department is None or department.institution_id != current_user.institution_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=Errors.INSUFFICIENT_PERMISSIONS)
+        department = await get_departments(session, department_id)
+        if (
+            department is None
+            or department.institution_id != current_user.institution_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
+            )
         return await get_users(session, department_id=department_id)
 
     if institution_id is not None:
         if current_user.institution_id != institution_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=Errors.INSUFFICIENT_PERMISSIONS)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
+            )
         return await get_users(session, institution_id=institution_id)
 
     if current_user.institution_id is not None:
@@ -67,7 +78,7 @@ async def assign_institution(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
-    institution = await get_institution(session, data.institution_id)
+    institution = await get_institutions(session, data.institution_id)
     if institution is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
@@ -148,7 +159,7 @@ async def assign_department(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
-    department = await get_department(session, data.department_id)
+    department = await get_departments(session, data.department_id)
     if department is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.DEPARTMENT_NOT_FOUND

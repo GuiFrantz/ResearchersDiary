@@ -32,18 +32,20 @@ async def get_records(
     return result.first() if record_id is not None else result.all()
 
 
-async def get_institution(session: AsyncSession, institution_id: uuid.UUID):
-    result = await session.exec(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    return result.first()
+async def get_institutions(session: AsyncSession, institution_id: uuid.UUID):
+    stmt = select(Institution)
+    if institution_id is not None:
+        stmt = stmt.where(Institution.id == institution_id)
+    result = await session.exec(stmt)
+    return result.first() if institution_id is not None else result.all()
 
 
-async def get_department(session: AsyncSession, department_id: uuid.UUID):
-    result = await session.exec(
-        select(Department).where(Department.id == department_id)
-    )
-    return result.first()
+async def get_departments(session: AsyncSession, department_id: uuid.UUID):
+    stmt = select(Department)
+    if department_id is not None:
+        stmt = stmt.where(Department.id == department_id)
+    result = await session.exec(stmt)
+    return result.first() if department_id is not None else result.all()
 
 
 async def get_users(
