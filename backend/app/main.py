@@ -9,10 +9,12 @@ from app.database import engine
 from app.routers import auth as auth_router
 from app.routers import departments as departments_router
 from app.routers import experiences as experiences_router
+from app.routers import exports as exports_router
 from app.routers import institutions as institutions_router
 from app.routers import projects as projects_router
 from app.routers import proposals as proposals_router
 from app.routers import publications as publications_router
+from app.routers import reports as reports_router
 from app.routers import users as users_router
 
 
@@ -45,6 +47,8 @@ app.include_router(publications_router.router)
 app.include_router(projects_router.router)
 app.include_router(proposals_router.router)
 app.include_router(experiences_router.router)
+app.include_router(exports_router.router)
+app.include_router(reports_router.router)
 
 
 @app.get("/", tags=["Health"])
