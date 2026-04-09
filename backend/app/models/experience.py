@@ -24,7 +24,7 @@ class Experience(SQLModel, table=True):
     organization: Optional[str] = Field(default=None)
     role_title: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.PRIVATE)
+    visibility: Visibility = Field(default=Visibility.INSTITUTION)
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     is_current: bool = Field(default=False)

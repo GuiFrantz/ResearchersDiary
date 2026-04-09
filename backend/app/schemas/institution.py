@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -18,4 +17,3 @@ class InstitutionRead(BaseModel):
 
     id: uuid.UUID
     name: str
-    created_at: datetime

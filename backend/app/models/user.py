@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String
@@ -37,4 +36,3 @@ class User(SQLModel, table=True):
 
     role: UserRole = Field(default=UserRole.RESEARCHER)
     position_title: Optional[str] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)

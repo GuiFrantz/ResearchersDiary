@@ -26,7 +26,7 @@ class Project(SQLModel, table=True):
     grant_number: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
     status: Optional[ProjectStatus] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.PRIVATE)
+    visibility: Visibility = Field(default=Visibility.INSTITUTION)
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     budget: Optional[Decimal] = Field(

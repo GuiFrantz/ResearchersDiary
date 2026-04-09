@@ -15,7 +15,7 @@ class PublicationCreate(BaseModel):
     doi: Optional[str] = None
     url: Optional[str] = None
     status: Optional[str] = None
-    visibility: Visibility = Visibility.PRIVATE
+    visibility: Visibility = Visibility.INSTITUTION
     is_imported: bool = False
 
 

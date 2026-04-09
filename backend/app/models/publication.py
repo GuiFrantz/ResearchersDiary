@@ -29,6 +29,6 @@ class Publication(SQLModel, table=True):
     )
     url: Optional[str] = Field(default=None)
     status: Optional[str] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.PRIVATE)
+    visibility: Visibility = Field(default=Visibility.INSTITUTION)
     is_imported: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

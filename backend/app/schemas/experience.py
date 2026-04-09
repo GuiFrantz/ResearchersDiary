@@ -12,7 +12,7 @@ class ExperienceCreate(BaseModel):
     organization: Optional[str] = None
     role_title: Optional[str] = None
     description: Optional[str] = None
-    visibility: Visibility = Visibility.PRIVATE
+    visibility: Visibility = Visibility.INSTITUTION
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_current: bool = False

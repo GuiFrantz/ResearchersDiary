@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Column
@@ -15,4 +14,3 @@ class Institution(SQLModel, table=True):
         sa_column=Column(pg_UUID(as_uuid=True), primary_key=True),
     )
     name: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)

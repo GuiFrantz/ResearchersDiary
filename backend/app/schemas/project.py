@@ -14,7 +14,7 @@ class ProjectCreate(BaseModel):
     grant_number: Optional[str] = None
     role: Optional[str] = None
     status: Optional[ProjectStatus] = None
-    visibility: Visibility = Visibility.PRIVATE
+    visibility: Visibility = Visibility.INSTITUTION
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     budget: Optional[Decimal] = None

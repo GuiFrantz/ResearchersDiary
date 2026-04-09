@@ -16,7 +16,6 @@ class UserRole(str, Enum):
 
 class Visibility(str, Enum):
     PRIVATE = "private"
-    DEPARTMENT = "department"
     INSTITUTION = "institution"
 
 

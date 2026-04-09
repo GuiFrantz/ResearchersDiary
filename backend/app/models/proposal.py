@@ -25,7 +25,7 @@ class Proposal(SQLModel, table=True):
     reference: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
     status: Optional[ProposalStatus] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.PRIVATE)
+    visibility: Visibility = Field(default=Visibility.INSTITUTION)
     submission_date: Optional[date] = Field(default=None)
     decision_date: Optional[date] = Field(default=None)
     project_id: Optional[uuid.UUID] = Field(

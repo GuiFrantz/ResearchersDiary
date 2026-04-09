@@ -13,7 +13,7 @@ class ProposalCreate(BaseModel):
     reference: Optional[str] = None
     role: Optional[str] = None
     status: Optional[ProposalStatus] = None
-    visibility: Visibility = Visibility.PRIVATE
+    visibility: Visibility = Visibility.INSTITUTION
     submission_date: Optional[date] = None
     decision_date: Optional[date] = None
     project_id: Optional[uuid.UUID] = None

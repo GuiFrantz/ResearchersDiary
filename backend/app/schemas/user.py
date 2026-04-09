@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
@@ -46,4 +45,3 @@ class UserRead(BaseModel):
     orcid_id: Optional[str]
     institution_id: Optional[uuid.UUID]
     department_id: Optional[uuid.UUID]
-    created_at: datetime
