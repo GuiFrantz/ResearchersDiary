@@ -7,7 +7,6 @@ from app.auth import get_current_user
 from app.constants import ApiPrefix, Errors
 from app.database import get_session
 from app.models import Publication, User
-from app.permissions import validate_visibility
 from app.queries import get_records
 from app.schemas import PublicationCreate, PublicationRead, PublicationUpdate
 
@@ -20,7 +19,6 @@ async def create_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    validate_visibility(data.visibility, current_user)
     publication = Publication(user_id=current_user.id, **data.model_dump())
     session.add(publication)
     await session.commit()
@@ -42,7 +40,9 @@ async def get_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await get_records(Publication, current_user, session, record_id=publication_id)
+    publication = await get_records(
+        Publication, current_user, session, record_id=publication_id
+    )
     if publication is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
@@ -57,7 +57,9 @@ async def update_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await get_records(Publication, current_user, session, record_id=publication_id, owner_only=True)
+    publication = await get_records(
+        Publication, current_user, session, record_id=publication_id, owner_only=True
+    )
     if publication is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
@@ -78,7 +80,9 @@ async def delete_publication(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await get_records(Publication, current_user, session, record_id=publication_id, owner_only=True)
+    publication = await get_records(
+        Publication, current_user, session, record_id=publication_id, owner_only=True
+    )
     if publication is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.PUBLICATION_NOT_FOUND
