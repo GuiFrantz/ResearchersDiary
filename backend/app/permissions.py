@@ -64,10 +64,13 @@ def _visibility_conditions(model_class, current_user: User) -> list:
         role_level >= ROLE_HIERARCHY[UserRole.DEPARTMENT_HEAD]
         and current_user.department_id is not None
     ):
+        dept_user_ids = select(User.id).where(
+            User.department_id == current_user.department_id
+        )
         conditions.append(
             and_(
-                model_class.visibility != Visibility.PRIVATE,
-                User.department_id == current_user.department_id,
+                model_class.visibility != Visibility.PRIVATE.value,
+                model_class.user_id.in_(dept_user_ids),
             )
         )
 
@@ -75,16 +78,19 @@ def _visibility_conditions(model_class, current_user: User) -> list:
         role_level >= ROLE_HIERARCHY[UserRole.INSTITUTION_HEAD]
         and current_user.institution_id is not None
     ):
+        inst_user_ids = select(User.id).where(
+            User.institution_id == current_user.institution_id
+        )
         conditions.append(
             and_(
-                model_class.visibility != Visibility.PRIVATE,
-                User.institution_id == current_user.institution_id,
+                model_class.visibility != Visibility.PRIVATE.value,
+                model_class.user_id.in_(inst_user_ids),
             )
         )
 
     # admin sees all non-private records
     if current_user.role == UserRole.ADMIN:
-        conditions.append(model_class.visibility != Visibility.PRIVATE)
+        conditions.append(model_class.visibility != Visibility.PRIVATE.value)
 
     return conditions
 

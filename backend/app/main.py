@@ -7,6 +7,7 @@ from sqlmodel import SQLModel
 from app.constants import APP_TITLE, APP_VERSION, CORS_ORIGINS
 from app.database import engine
 from app.routers import auth as auth_router
+from app.routers import demo as demo_router
 from app.routers import departments as departments_router
 from app.routers import experiences as experiences_router
 from app.routers import exports as exports_router
@@ -39,6 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(demo_router.router)
 app.include_router(auth_router.router)
 app.include_router(institutions_router.router)
 app.include_router(departments_router.router)

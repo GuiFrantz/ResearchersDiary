@@ -30,5 +30,7 @@ class Proposal(SQLModel, table=True):
     decision_date: Optional[date] = Field(default=None)
     project_id: Optional[uuid.UUID] = Field(
         default=None,
-        sa_column=Column(pg_UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True),
+        sa_column=Column(
+            pg_UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True
+        ),
     )

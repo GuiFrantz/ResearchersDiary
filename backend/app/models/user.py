@@ -18,7 +18,10 @@ class User(SQLModel, table=True):
     email: str = Field(sa_column=Column(String, unique=True, nullable=False))
     name: Optional[str] = Field(default=None)
     password_hash: Optional[str] = Field(default=None)
-    auth_provider: AuthProvider = Field(default=AuthProvider.LOCAL)
+    auth_provider: AuthProvider = Field(
+        default=AuthProvider.LOCAL,
+        sa_column=Column(String, nullable=False),
+    )
     orcid_id: Optional[str] = Field(default=None)
 
     institution_id: Optional[uuid.UUID] = Field(
@@ -34,5 +37,8 @@ class User(SQLModel, table=True):
         ),
     )
 
-    role: UserRole = Field(default=UserRole.RESEARCHER)
+    role: UserRole = Field(
+        default=UserRole.RESEARCHER,
+        sa_column=Column(String, nullable=False),
+    )
     position_title: Optional[str] = Field(default=None)

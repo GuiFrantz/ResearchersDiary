@@ -20,19 +20,17 @@ async def get_records(
         stmt = select(model_class).where(model_class.user_id == current_user.id)
     else:
         conditions = _visibility_conditions(model_class, current_user)
-        stmt = (
-            select(model_class)
-            .join(User, model_class.user_id == User.id)
-            .where(or_(*conditions))
-            .distinct()
-        )
+        stmt = select(model_class).where(or_(*conditions))
     if record_id is not None:
         stmt = stmt.where(model_class.id == record_id)
     result = await session.exec(stmt)
     return result.first() if record_id is not None else result.all()
 
 
-async def get_institutions(session: AsyncSession, institution_id: uuid.UUID):
+async def get_institutions(
+    session: AsyncSession,
+    institution_id: uuid.UUID | None = None,
+):
     stmt = select(Institution)
     if institution_id is not None:
         stmt = stmt.where(Institution.id == institution_id)
@@ -40,10 +38,17 @@ async def get_institutions(session: AsyncSession, institution_id: uuid.UUID):
     return result.first() if institution_id is not None else result.all()
 
 
-async def get_departments(session: AsyncSession, department_id: uuid.UUID):
+async def get_departments(
+    session: AsyncSession,
+    department_id: uuid.UUID | None = None,
+    *,
+    institution_id: uuid.UUID | None = None,
+):
     stmt = select(Department)
     if department_id is not None:
         stmt = stmt.where(Department.id == department_id)
+    if institution_id is not None:
+        stmt = stmt.where(Department.institution_id == institution_id)
     result = await session.exec(stmt)
     return result.first() if department_id is not None else result.all()
 
