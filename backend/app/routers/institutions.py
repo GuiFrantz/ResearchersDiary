@@ -30,7 +30,7 @@ async def create_institution(
 @router.get("/", response_model=list[InstitutionRead])
 async def list_institutions(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(get_current_user),
 ):
     return await get_institutions(session)
 

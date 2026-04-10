@@ -8,7 +8,7 @@ import DemoBar from "@/components/DemoBar";
 import Sidebar from "@/components/Sidebar";
 import LibrarySection from "@/components/LibrarySection";
 import PeopleSection from "@/components/PeopleSection";
-import AdminSection from "@/components/AdminSection";
+import ManagementSection from "@/components/ManagementSection";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -72,7 +72,7 @@ export default function DashboardPage() {
           <div className="p-6 max-w-5xl">
             {section === "library" && <LibrarySection user={user} />}
             {section === "people" && <PeopleSection user={user} />}
-            {section === "admin" && <AdminSection />}
+            {section === "management" && <ManagementSection user={user} />}
           </div>
         </div>
       </div>
