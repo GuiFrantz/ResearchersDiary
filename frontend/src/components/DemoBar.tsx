@@ -58,7 +58,7 @@ export default function DemoBar({ user, credentials, onSwitch }: Props) {
               onClick={() => setOpen(!open)}
               className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 py-1 px-2 rounded-lg hover:bg-indigo-50 transition-colors"
             >
-              <span className="font-medium">Switch Account</span>
+              <span className="font-medium">Switch Account (Demo)</span>
               <span className="text-xs">&#9662;</span>
             </button>
 
@@ -82,7 +82,6 @@ export default function DemoBar({ user, credentials, onSwitch }: Props) {
                           <div className="text-sm font-medium text-gray-900">{cred.name}</div>
                           <div className="text-xs text-gray-400">
                             {ROLE_LABELS[cred.role]}
-                            {cred.institution && <span> &middot; {cred.institution}</span>}
                           </div>
                         </div>
                         {cred.email === user?.email && (
