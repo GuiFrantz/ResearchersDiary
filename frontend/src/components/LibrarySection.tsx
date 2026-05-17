@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+
 import { api, apiBlob } from "@/lib/api";
 import type {
-  User, Department, AnyRecord, ExportRequest, Institution,
-  DepartmentReport, InstitutionReport,
+  User, Department, AnyRecord, ExportRequest,
 } from "@/lib/types";
 import RecordForm, { type FieldDef } from "./RecordForm";
 
@@ -14,13 +14,15 @@ interface EntityConfig {
   singular: string;
   endpoint: string;
   exportKey: keyof ExportRequest;
+  icon: string;
   display: (r: AnyRecord) => { title: string; sub: string };
   fields: FieldDef[];
 }
 
 const ENTITIES: Record<string, EntityConfig> = {
   publications: {
-    label: "Publications", singular: "Publication", endpoint: "/api/publications", exportKey: "publication_ids",
+    label: "Publications", singular: "Publication", endpoint: "/api/publications",
+    exportKey: "publication_ids", icon: "📄",
     display: (r) => {
       const p = r as unknown as Record<string, unknown>;
       return { title: String(p.title || "—"), sub: [p.type, p.publisher].filter(Boolean).join(" · ") || "—" };
@@ -37,7 +39,8 @@ const ENTITIES: Record<string, EntityConfig> = {
     ],
   },
   projects: {
-    label: "Projects", singular: "Project", endpoint: "/api/projects", exportKey: "project_ids",
+    label: "Projects", singular: "Project", endpoint: "/api/projects",
+    exportKey: "project_ids", icon: "🧪",
     display: (r) => {
       const p = r as unknown as Record<string, unknown>;
       return { title: String(p.title || "—"), sub: String(p.agency || "—") };
@@ -55,7 +58,8 @@ const ENTITIES: Record<string, EntityConfig> = {
     ],
   },
   proposals: {
-    label: "Proposals", singular: "Proposal", endpoint: "/api/proposals", exportKey: "proposal_ids",
+    label: "Proposals", singular: "Proposal", endpoint: "/api/proposals",
+    exportKey: "proposal_ids", icon: "📝",
     display: (r) => {
       const p = r as unknown as Record<string, unknown>;
       return { title: String(p.title || "—"), sub: String(p.funding_body || "—") };
@@ -72,7 +76,8 @@ const ENTITIES: Record<string, EntityConfig> = {
     ],
   },
   experiences: {
-    label: "Experiences", singular: "Experience", endpoint: "/api/experiences", exportKey: "experience_ids",
+    label: "Experiences", singular: "Experience", endpoint: "/api/experiences",
+    exportKey: "experience_ids", icon: "💼",
     display: (r) => {
       const p = r as unknown as Record<string, unknown>;
       return { title: String(p.role_title || p.category || "—"), sub: String(p.organization || "—") };
@@ -90,134 +95,60 @@ const ENTITIES: Record<string, EntityConfig> = {
   },
 };
 
-const ROLE_LEVEL: Record<string, number> = { researcher: 0, department_head: 1, institution_head: 2, admin: 3 };
+const ENTITY_ORDER: Array<keyof typeof ENTITIES> = ["publications", "projects", "proposals", "experiences"];
 
-
-function formatDeptReport(r: DepartmentReport): string {
-  let t = "";
-  t += `DEPARTMENT REPORT\n`;
-  t += `${"=".repeat(50)}\n\n`;
-  t += `Department:   ${r.department.name}${r.department.code ? ` (${r.department.code})` : ""}\n`;
-  t += `Institution:  ${r.institution.name}\n`;
-  t += `Researchers:  ${r.researcher_count}\n`;
-  t += `Generated:    ${new Date(r.generated_at).toLocaleString()}\n\n`;
-
-  t += `SUMMARY\n${"-".repeat(30)}\n`;
-  t += `  Publications:  ${r.publications.total}\n`;
-  t += `  Projects:      ${r.projects.total}\n`;
-  t += `  Proposals:     ${r.proposals.total}\n\n`;
-
-  if (Object.keys(r.publications.by_type).length > 0) {
-    t += `Publications by Type\n`;
-    Object.entries(r.publications.by_type).forEach(([k, v]) => { t += `  ${k}: ${v}\n`; });
-    t += "\n";
-  }
-  if (Object.keys(r.publications.by_status).length > 0) {
-    t += `Publications by Status\n`;
-    Object.entries(r.publications.by_status).forEach(([k, v]) => { t += `  ${k}: ${v}\n`; });
-    t += "\n";
-  }
-  if (Object.keys(r.projects.by_status).length > 0) {
-    t += `Projects by Status\n`;
-    Object.entries(r.projects.by_status).forEach(([k, v]) => { t += `  ${k}: ${v}\n`; });
-    t += "\n";
-  }
-  if (Object.keys(r.proposals.by_status).length > 0) {
-    t += `Proposals by Status\n`;
-    Object.entries(r.proposals.by_status).forEach(([k, v]) => { t += `  ${k}: ${v}\n`; });
-    t += "\n";
-  }
-
-  if (r.researchers.length > 0) {
-    t += `PER-RESEARCHER BREAKDOWN\n${"-".repeat(30)}\n`;
-    r.researchers.forEach((res) => {
-      t += `  ${res.name || "—"}: ${res.publication_count} pubs, ${res.project_count} projs, ${res.proposal_count} props, ${res.experience_count} exps\n`;
-    });
-  }
-  return t;
-}
-
-function formatInstReport(r: InstitutionReport): string {
-  let t = "";
-  t += `INSTITUTION REPORT\n`;
-  t += `${"=".repeat(50)}\n\n`;
-  t += `Institution:  ${r.institution.name}\n`;
-  t += `Departments:  ${r.department_count}\n`;
-  t += `Researchers:  ${r.total_researchers}\n`;
-  t += `Generated:    ${new Date(r.generated_at).toLocaleString()}\n\n`;
-
-  t += `INSTITUTION TOTALS\n${"-".repeat(30)}\n`;
-  t += `  Publications:  ${r.institution_totals.publications.total}\n`;
-  t += `  Projects:      ${r.institution_totals.projects.total}\n`;
-  t += `  Proposals:     ${r.institution_totals.proposals.total}\n\n`;
-
-  r.departments.forEach((dept) => {
-    t += `DEPARTMENT: ${dept.name}${dept.code ? ` (${dept.code})` : ""}\n${"-".repeat(30)}\n`;
-    t += `  Researchers:   ${dept.researcher_count}\n`;
-    t += `  Publications:  ${dept.publications.total}\n`;
-    t += `  Projects:      ${dept.projects.total}\n`;
-    t += `  Proposals:     ${dept.proposals.total}\n\n`;
-  });
-  return t;
-}
-
-function downloadText(text: string, filename: string) {
-  const blob = new Blob([text], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+interface UnifiedRecord {
+  record: AnyRecord;
+  entityKey: string;
 }
 
 interface Props { user: User; }
 
 export default function LibrarySection({ user }: Props) {
-  const [tab, setTab] = useState("publications");
-  const [records, setRecords] = useState<AnyRecord[]>([]);
+  const [byEntity, setByEntity] = useState<Record<string, AnyRecord[]>>({});
   const [userMap, setUserMap] = useState<Map<string, User>>(new Map());
   const [deptMap, setDeptMap] = useState<Map<string, Department>>(new Map());
   const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState<{ record: AnyRecord | null; viewOnly: boolean } | null>(null);
+  const [editing, setEditing] = useState<{ entityKey: string; record: AnyRecord | null; viewOnly: boolean } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [selectedInstId, setSelectedInstId] = useState("");
-
-  const config = ENTITIES[tab];
-  const canReport = ROLE_LEVEL[user.role] >= 1;
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => {
     async function loadContext() {
       try { const u = await api<User[]>("GET", "/api/users"); setUserMap(new Map(u.map(x => [x.id, x]))); } catch {}
       try { const d = await api<Department[]>("GET", "/api/departments"); setDeptMap(new Map(d.map(x => [x.id, x]))); } catch {}
-      if (user.role === "admin") {
-        try { const i = await api<Institution[]>("GET", "/api/institutions"); setInstitutions(i); } catch {}
-      }
     }
     loadContext();
-  }, [user.role]);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setRecords(await api<AnyRecord[]>("GET", config.endpoint)); } catch {}
+    const next: Record<string, AnyRecord[]> = {};
+    await Promise.all(
+      ENTITY_ORDER.map(async (key) => {
+        try {
+          next[key] = await api<AnyRecord[]>("GET", ENTITIES[key].endpoint);
+        } catch {
+          next[key] = [];
+        }
+      }),
+    );
+    setByEntity(next);
     setLoading(false);
-  }, [config.endpoint]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const ownRecords = records.filter((r) => r.user_id === user.id);
-  const otherRecords = records.filter((r) => {
-    if (r.user_id === user.id) return false;
-    // When admin has an institution selected, filter visible records to that institution
-    if (user.role === "admin" && selectedInstId) {
-      const owner = userMap.get(r.user_id);
-      return owner?.institution_id === selectedInstId;
+  const all = useMemo<UnifiedRecord[]>(() => {
+    const out: UnifiedRecord[] = [];
+    for (const key of ENTITY_ORDER) {
+      for (const r of byEntity[key] ?? []) out.push({ record: r, entityKey: key });
     }
-    return true;
-  });
+    return out;
+  }, [byEntity]);
+
+  const ownAll = useMemo(() => all.filter((u) => u.record.user_id === user.id), [all, user.id]);
+  const otherAll = useMemo(() => all.filter((u) => u.record.user_id !== user.id), [all, user.id]);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -227,19 +158,12 @@ export default function LibrarySection({ user }: Props) {
     });
   }
 
-  // Export: collect selected IDs grouped by entity type, download JSON
   async function handleExport() {
     const body: ExportRequest = { publication_ids: [], project_ids: [], proposal_ids: [], experience_ids: [] };
-    // We need to know which type each selected ID belongs to — fetch all types
-    const allRecords = new Map<string, string>(); // id → entity key
-    for (const [key, cfg] of Object.entries(ENTITIES)) {
-      try {
-        const recs = await api<AnyRecord[]>("GET", cfg.endpoint);
-        recs.filter(r => r.user_id === user.id).forEach(r => allRecords.set(r.id, key));
-      } catch {}
-    }
+    const ownIdToEntity = new Map<string, string>();
+    for (const u of ownAll) ownIdToEntity.set(u.record.id, u.entityKey);
     selected.forEach((id) => {
-      const key = allRecords.get(id);
+      const key = ownIdToEntity.get(id);
       if (key) body[ENTITIES[key].exportKey].push(id);
     });
     try {
@@ -255,43 +179,33 @@ export default function LibrarySection({ user }: Props) {
     } catch {}
   }
 
-  async function handleReport() {
-    try {
-      if (user.role === "department_head" && user.department_id) {
-        const r = await api<DepartmentReport>("GET", `/api/reports/department/${user.department_id}`);
-        downloadText(formatDeptReport(r), `department_report.txt`);
-      } else if (user.role === "institution_head" && user.institution_id) {
-        const r = await api<InstitutionReport>("GET", `/api/reports/institution/${user.institution_id}`);
-        downloadText(formatInstReport(r), `institution_report.txt`);
-      } else if (user.role === "admin" && selectedInstId) {
-        const r = await api<InstitutionReport>("GET", `/api/reports/institution/${selectedInstId}`);
-        downloadText(formatInstReport(r), `institution_report.txt`);
-      }
-    } catch {}
-  }
-
-  function RecordRow({ r, isOwn }: { r: AnyRecord; isOwn: boolean }) {
-    const d = config.display(r);
-    const owner = !isOwn ? userMap.get(r.user_id) : null;
+  function RecordRow({ item, isOwn }: { item: UnifiedRecord; isOwn: boolean }) {
+    const cfg = ENTITIES[item.entityKey];
+    const d = cfg.display(item.record);
+    const owner = !isOwn ? userMap.get(item.record.user_id) : null;
     const ownerDept = owner?.department_id ? deptMap.get(owner.department_id) : null;
 
     return (
       <div
-        onClick={() => setEditing({ record: r, viewOnly: !isOwn })}
+        onClick={() => setEditing({ entityKey: item.entityKey, record: item.record, viewOnly: !isOwn })}
         className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-gray-300 cursor-pointer transition-colors"
       >
         {isOwn && (
           <input
             type="checkbox"
-            checked={selected.has(r.id)}
-            onChange={(e) => { e.stopPropagation(); toggleSelect(r.id); }}
+            checked={selected.has(item.record.id)}
+            onChange={(e) => { e.stopPropagation(); toggleSelect(item.record.id); }}
             onClick={(e) => e.stopPropagation()}
             className="rounded border-gray-300 text-indigo-600 shrink-0"
           />
         )}
+        <span className="text-lg shrink-0" title={cfg.singular}>{cfg.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-gray-900 truncate">{d.title}</div>
-          <div className="text-xs text-gray-400 truncate">{d.sub}</div>
+          <div className="text-xs text-gray-400 truncate">
+            <span className="text-gray-500">{cfg.singular}</span>
+            {d.sub && d.sub !== "—" ? <span> · {d.sub}</span> : null}
+          </div>
         </div>
         <div className="text-right shrink-0">
           {isOwn ? null : (
@@ -305,26 +219,12 @@ export default function LibrarySection({ user }: Props) {
     );
   }
 
+  const editingCfg = editing ? ENTITIES[editing.entityKey] : null;
+
   return (
     <div>
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4">
-        {Object.entries(ENTITIES).map(([key, cfg]) => (
-          <button
-            key={key}
-            onClick={() => { setTab(key); setEditing(null); }}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              tab === key ? "bg-indigo-100 text-indigo-700 font-medium" : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            {cfg.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Header row: title + action buttons */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">{config.label}</h2>
+        <h2 className="text-lg font-semibold">Library</h2>
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
             <button
@@ -334,71 +234,70 @@ export default function LibrarySection({ user }: Props) {
               Export ({selected.size})
             </button>
           )}
-          {canReport && (
-            user.role === "admin" ? (
-              <div className="flex items-center gap-1">
-                <select
-                  value={selectedInstId}
-                  onChange={(e) => setSelectedInstId(e.target.value)}
-                  className="text-sm px-2 py-1.5 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Institution...</option>
-                  {institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-                </select>
-                <button
-                  onClick={handleReport}
-                  disabled={!selectedInstId}
-                  className="text-sm px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 disabled:opacity-50 transition-colors"
-                >
-                  Generate Report
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleReport}
-                className="text-sm px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
-              >
-                Generate Report
-              </button>
-            )
-          )}
-          <button
-            onClick={() => setEditing({ record: null, viewOnly: false })}
-            className="text-sm px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            + New {config.singular}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNewOpen((v) => !v)}
+              className="text-sm px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              + New ▾
+            </button>
+            {newOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setNewOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-40 overflow-hidden">
+                  {ENTITY_ORDER.map((key) => {
+                    const cfg = ENTITIES[key];
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setNewOpen(false);
+                          setEditing({ entityKey: key, record: null, viewOnly: false });
+                        }}
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <span className="text-base">{cfg.icon}</span>
+                        <span>{cfg.singular}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Records */}
       {loading ? (
         <p className="text-sm text-gray-400 py-4">Loading...</p>
-      ) : records.length === 0 ? (
-        <p className="text-sm text-gray-400 py-4">No {config.label.toLowerCase()} found.</p>
+      ) : all.length === 0 ? (
+        <p className="text-sm text-gray-400 py-4">No records yet. Click + New to create one.</p>
       ) : (
         <div className="space-y-4">
-          {ownRecords.length > 0 && (
+          {ownAll.length > 0 && (
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Your Records ({ownRecords.length})</h3>
-              <div className="space-y-1">{ownRecords.map((r) => <RecordRow key={r.id} r={r} isOwn={true} />)}</div>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Your Records ({ownAll.length})</h3>
+              <div className="space-y-1">
+                {ownAll.map((item) => <RecordRow key={item.record.id} item={item} isOwn={true} />)}
+              </div>
             </div>
           )}
-          {otherRecords.length > 0 && (
+          {otherAll.length > 0 && (
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Visible Records ({otherRecords.length})</h3>
-              <div className="space-y-1">{otherRecords.map((r) => <RecordRow key={r.id} r={r} isOwn={false} />)}</div>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Visible Records ({otherAll.length})</h3>
+              <div className="space-y-1">
+                {otherAll.map((item) => <RecordRow key={item.record.id} item={item} isOwn={false} />)}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Form panel */}
-      {editing !== null && (
+      {editing !== null && editingCfg && (
         <RecordForm
-          entity={config.singular}
-          endpoint={config.endpoint}
-          fields={config.fields}
+          entity={editingCfg.singular}
+          endpoint={editingCfg.endpoint}
+          fields={editingCfg.fields}
           record={editing.record}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}

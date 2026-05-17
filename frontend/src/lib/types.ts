@@ -1,7 +1,40 @@
 export type Visibility = "private" | "institution";
-export type UserRole = "researcher" | "department_head" | "institution_head" | "admin";
+export type UserRole = "researcher" | "department_head" | "institution_head";
 export type ProjectStatus = "active" | "concluded" | "canceled";
 export type ProposalStatus = "draft" | "submitted" | "approved" | "denied";
+export type InvitationStatus = "pending" | "accepted" | "declined" | "cancelled" | "expired";
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  researcher: "Researcher",
+  department_head: "Dept Head",
+  institution_head: "Inst Head",
+};
+
+export const ROLE_LEVEL: Record<UserRole, number> = {
+  researcher: 0,
+  department_head: 1,
+  institution_head: 2,
+};
+
+export const NOT_AFFILIATED_MSG = "You're not in an institution.";
+export const GENERIC_FAIL_MSG = "Something went wrong";
+
+export interface Invitation {
+  id: string;
+  recipient_id: string;
+  inviter_id: string;
+  institution_id: string;
+  department_id: string | null;
+  role: UserRole;
+  status: InvitationStatus;
+  created_at: string;
+  expires_at: string;
+  responded_at: string | null;
+  institution_name: string | null;
+  department_name: string | null;
+  inviter_name: string | null;
+  recipient_name: string | null;
+}
 
 export interface User {
   id: string;
@@ -158,19 +191,3 @@ export interface InstitutionReport {
   };
 }
 
-// Demo
-export interface DemoCredential {
-  email: string;
-  name: string;
-  role: UserRole;
-  password: string;
-  token: string;
-  institution: string | null;
-  department: string | null;
-}
-
-export interface DemoSeedResponse {
-  seeded: boolean;
-  already_existed?: boolean;
-  credentials: DemoCredential[];
-}

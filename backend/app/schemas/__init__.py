@@ -1,12 +1,12 @@
 from .department import DepartmentCreate, DepartmentRead, DepartmentUpdate
 from .experience import ExperienceCreate, ExperienceRead, ExperienceUpdate
 from .institution import InstitutionCreate, InstitutionRead, InstitutionUpdate
+from .invitation import InvitationCreate, InvitationRead
 from .project import ProjectCreate, ProjectRead, ProjectUpdate
 from .proposal import ProposalCreate, ProposalRead, ProposalUpdate
 from .publication import PublicationCreate, PublicationRead, PublicationUpdate
 from .user import (
     AssignDepartment,
-    AssignInstitution,
     AssignRole,
     Token,
     UserLogin,
@@ -20,7 +20,6 @@ __all__ = [
     "UserLogin",
     "Token",
     "UserRead",
-    "AssignInstitution",
     "AssignDepartment",
     "AssignRole",
     # Institution
@@ -31,6 +30,9 @@ __all__ = [
     "DepartmentCreate",
     "DepartmentUpdate",
     "DepartmentRead",
+    # Invitation
+    "InvitationCreate",
+    "InvitationRead",
     # Publication
     "PublicationCreate",
     "PublicationUpdate",

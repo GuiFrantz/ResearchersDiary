@@ -3,17 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken, setToken } from "@/lib/api";
-import type { User, DemoCredential } from "@/lib/types";
-import DemoBar from "@/components/DemoBar";
+import type { User } from "@/lib/types";
 import Sidebar from "@/components/Sidebar";
 import LibrarySection from "@/components/LibrarySection";
 import PeopleSection from "@/components/PeopleSection";
 import ManagementSection from "@/components/ManagementSection";
+import Inbox from "@/components/Inbox";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [credentials, setCredentials] = useState<DemoCredential[]>([]);
   const [section, setSection] = useState("library");
   const [loading, setLoading] = useState(true);
 
@@ -34,17 +33,12 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("rd_demo_creds");
-      if (stored) setCredentials(JSON.parse(stored));
-    } catch { /* ignore */ }
     fetchUser();
   }, [fetchUser]);
 
-  function handleSwitch() {
-    setLoading(true);
-    setSection("library");
-    fetchUser();
+  function handleLogout() {
+    setToken(null);
+    router.replace("/login");
   }
 
   if (loading || !user) {
@@ -57,14 +51,23 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <DemoBar
-        user={user}
-        credentials={credentials}
-        onSwitch={handleSwitch}
-      />
+      <div className="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between shrink-0 z-20">
+        <span className="font-semibold text-gray-900 text-sm">Researcher's Diary</span>
+        <div className="flex items-center gap-3">
+          <Inbox onAccepted={fetchUser} />
+          <span className="text-sm text-gray-700 font-medium">{user.name ?? user.email}</span>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-gray-400 hover:text-gray-600 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Log out
+          </button>
+        </div>
+      </div>
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
           role={user.role}
+          institutionId={user.institution_id}
           current={section}
           onNavigate={setSection}
         />

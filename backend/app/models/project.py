@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Column, ForeignKey, Numeric
+from sqlalchemy import Column, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
@@ -25,8 +25,14 @@ class Project(SQLModel, table=True):
     agency: Optional[str] = Field(default=None)
     grant_number: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
-    status: Optional[ProjectStatus] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.INSTITUTION)
+    status: Optional[ProjectStatus] = Field(
+        default=None,
+        sa_column=Column(String, nullable=True),
+    )
+    visibility: Visibility = Field(
+        default=Visibility.INSTITUTION,
+        sa_column=Column(String, nullable=False),
+    )
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     budget: Optional[Decimal] = Field(

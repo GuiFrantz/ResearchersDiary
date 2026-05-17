@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken } from "@/lib/api";
-import type { Token, DemoSeedResponse } from "@/lib/types";
+import type { Token } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,15 +13,12 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // Clear any stale demo credentials from a previous demo session
-      localStorage.removeItem("rd_demo_creds");
       if (mode === "register") {
         const data = await api<Token>("POST", "/api/auth/register", {
           email,
@@ -39,28 +36,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleSeedAndLogin() {
-    setError("");
-    setSeeding(true);
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const data = await api<DemoSeedResponse>("POST", "/api/demo/seed");
-        localStorage.setItem("rd_demo_creds", JSON.stringify(data.credentials));
-        const admin = data.credentials.find((c) => c.role === "admin");
-        if (admin) {
-          setToken(admin.token);
-          router.push("/dashboard");
-        }
-        setSeeding(false);
-        return;
-      } catch {
-        if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
-      }
-    }
-    setError("Backend not ready yet — please try again.");
-    setSeeding(false);
   }
 
   return (
@@ -137,19 +112,6 @@ export default function LoginPage() {
             {loading ? (mode === "register" ? "Creating account..." : "Signing in...") : (mode === "register" ? "Create Account" : "Sign In")}
           </button>
         </form>
-
-        <div className="mt-4">
-          <div className="relative flex items-center justify-center">
-            <span className="text-xs text-gray-400 bg-gray-50 px-2">or</span>
-          </div>
-          <button
-            onClick={handleSeedAndLogin}
-            disabled={seeding}
-            className="mt-3 w-full py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-          >
-            {seeding ? "Setting up demo..." : "Launch Demo Environment"}
-          </button>
-        </div>
       </div>
     </div>
   );

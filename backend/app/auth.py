@@ -78,7 +78,6 @@ ROLE_HIERARCHY = {
     UserRole.RESEARCHER: 0,
     UserRole.DEPARTMENT_HEAD: 1,
     UserRole.INSTITUTION_HEAD: 2,
-    UserRole.ADMIN: 3,
 }
 
 

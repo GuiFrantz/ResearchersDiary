@@ -5,6 +5,7 @@ from .publication import Publication
 from .project import Project
 from .proposal import Proposal
 from .experience import Experience
+from .invitation import Invitation
 
 __all__ = [
     "Institution",
@@ -14,4 +15,5 @@ __all__ = [
     "Project",
     "Proposal",
     "Experience",
+    "Invitation",
 ]

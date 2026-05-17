@@ -2,24 +2,23 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/api";
-import type { User, Department, Institution, UserRole } from "@/lib/types";
-
-const ROLE_LABELS: Record<string, string> = {
-  researcher: "Researcher",
-  department_head: "Dept Head",
-  institution_head: "Inst Head",
-  admin: "Admin",
-};
+import {
+  ROLE_LABELS,
+  ROLE_LEVEL,
+  GENERIC_FAIL_MSG,
+  type User,
+  type Department,
+  type Institution,
+  type UserRole,
+} from "@/lib/types";
+import InviteForm from "./InviteForm";
+import SentInvitations from "./SentInvitations";
+import CreateInstitutionForm from "./CreateInstitutionForm";
 
 const ROLE_COLORS: Record<string, string> = {
   researcher: "bg-gray-100 text-gray-700",
   department_head: "bg-blue-100 text-blue-700",
   institution_head: "bg-purple-100 text-purple-700",
-  admin: "bg-red-100 text-red-700",
-};
-
-const ROLE_LEVEL: Record<string, number> = {
-  researcher: 0, department_head: 1, institution_head: 2, admin: 3,
 };
 
 // Stable color palette for institution badges
@@ -36,7 +35,7 @@ const INST_COLORS = [
   "bg-sky-100 text-sky-700",
 ];
 
-const ALL_ROLES: UserRole[] = ["researcher", "department_head", "institution_head", "admin"];
+const ALL_ROLES: UserRole[] = ["researcher", "department_head", "institution_head"];
 
 interface Props { user: User; }
 
@@ -47,6 +46,10 @@ export default function PeopleSection({ user }: Props) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [invitesRefresh, setInvitesRefresh] = useState(0);
+  const canInvite =
+    user.institution_id !== null &&
+    (user.role === "institution_head" || user.role === "department_head");
 
   const deptMap = new Map(depts.map(d => [d.id, d]));
   const instMap = new Map(insts.map(i => [i.id, i]));
@@ -99,13 +102,16 @@ export default function PeopleSection({ user }: Props) {
     return instMap.get(curInstId)?.name || "Unknown Institution";
   }
 
-  async function changeRole(userId: string, role: UserRole) {
+  async function changeRole(target: User, role: UserRole) {
+    if (role === target.role) return;
+    const note = roleChangeNote(target, role);
+    if (!window.confirm(note)) return;
     setMessage("");
     try {
-      await api("PUT", `/api/users/${userId}/role`, { role });
+      await api("PUT", `/api/users/${target.id}/role`, { role });
       load();
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Failed");
+      setMessage(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     }
   }
 
@@ -115,29 +121,137 @@ export default function PeopleSection({ user }: Props) {
       await api("PUT", `/api/users/${userId}/department`, { department_id: deptId });
       load();
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Failed");
+      setMessage(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     }
   }
 
-  async function assignInst(userId: string, instId: string) {
+  function roleChangeNote(target: User, newRole: UserRole): string {
+    const name = target.name || target.email;
+    const oldLabel = ROLE_LABELS[target.role] ?? target.role;
+    const newLabel = ROLE_LABELS[newRole] ?? newRole;
+    const lines = [
+      `Change ${name}'s role from ${oldLabel} to ${newLabel}?`,
+      "",
+    ];
+    if (ROLE_LEVEL[newRole] > ROLE_LEVEL[target.role]) {
+      lines.push("This is a promotion — they'll gain new permissions immediately.");
+    } else if (ROLE_LEVEL[newRole] < ROLE_LEVEL[target.role]) {
+      lines.push("This is a demotion — they'll lose their current permissions.");
+      if (target.role === "institution_head") {
+        lines.push(
+          "If they're the only institution head with members remaining, the change will be blocked.",
+        );
+      }
+      if (target.role === "department_head") {
+        lines.push(
+          "If they're the only department head with members remaining, the change will be blocked.",
+        );
+      }
+    }
+    return lines.join("\n");
+  }
+
+  async function removeUser(target: User) {
+    const name = target.name || target.email;
+    const lines = [
+      `Remove ${name} from this institution?`,
+      "",
+      "They will be cleared from this institution and any department.",
+      "Their personal records stay with them.",
+    ];
+    if (!window.confirm(lines.join("\n"))) return;
     setMessage("");
     try {
-      await api("PUT", `/api/users/${userId}/institution`, { institution_id: instId });
+      await api("DELETE", `/api/users/${target.id}/institution`);
       load();
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Failed");
+      setMessage(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     }
+  }
+
+  async function leaveInstitution() {
+    if (!user.institution_id) return;
+    const lines = [
+      "Leave this institution?",
+      "",
+      "You'll become unaffiliated and your role will reset to Researcher.",
+      "Your personal records stay with you.",
+      "If you're the last member, the institution and its departments will be deleted.",
+      "If you're the institution head, transfer the role before leaving.",
+    ];
+    if (!window.confirm(lines.join("\n"))) return;
+    setMessage("");
+    try {
+      await api("POST", `/api/institutions/${user.institution_id}/leave`);
+      window.location.reload();
+    } catch (err: unknown) {
+      setMessage(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
+    }
+  }
+
+  function canRemove(target: User): boolean {
+    if (target.id === user.id) return false;
+    if (target.institution_id !== user.institution_id) return false;
+    if (user.role === "institution_head") {
+      return ROLE_LEVEL[target.role] < ROLE_LEVEL[user.role];
+    }
+    if (user.role === "department_head") {
+      return (
+        target.department_id === user.department_id &&
+        ROLE_LEVEL[target.role] < ROLE_LEVEL[user.role]
+      );
+    }
+    return false;
+  }
+
+  function allowedRolesFor(target: User): UserRole[] {
+    if (target.id === user.id) return [];
+    const max = ROLE_LEVEL[user.role];
+    return ALL_ROLES.filter((r) => ROLE_LEVEL[r] < max);
   }
 
   if (loading) return <p className="text-sm text-gray-400 py-4">Loading...</p>;
 
+  if (user.institution_id === null) {
+    return (
+      <div>
+        <h2 className="text-lg font-semibold">People</h2>
+        <p className="text-sm text-gray-500 mt-4 mb-3">
+          You&apos;re not in an institution yet. Create one or wait for an invitation.
+        </p>
+        <CreateInstitutionForm onCreated={() => window.location.reload()} />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className="text-lg font-semibold">People</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">People</h2>
+        <button
+          onClick={leaveInstitution}
+          className="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+        >
+          Leave institution
+        </button>
+      </div>
 
       {message && (
         <div className="text-sm mb-3 px-3 py-2 rounded-lg bg-gray-100 text-gray-600">
           {message}
+        </div>
+      )}
+
+      {canInvite && (
+        <div className="space-y-2 mt-4">
+          <InviteForm
+            user={user}
+            onCreated={() => {
+              setInvitesRefresh((n) => n + 1);
+              load();
+            }}
+          />
+          <SentInvitations refreshKey={invitesRefresh} />
         </div>
       )}
 
@@ -161,12 +275,15 @@ export default function PeopleSection({ user }: Props) {
                   {isEditing ? (
                     <select
                       value={u.role}
-                      onChange={(e) => { changeRole(u.id, e.target.value as UserRole); setEditingId(null); }}
+                      onChange={(e) => { changeRole(u, e.target.value as UserRole); setEditingId(null); }}
                       className="text-xs border border-gray-200 rounded px-1.5 py-0.5"
                     >
-                      {ALL_ROLES.map((r) => (
-                        <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                      ))}
+                      <option value={u.role}>{ROLE_LABELS[u.role] ?? u.role}</option>
+                      {allowedRolesFor(u)
+                        .filter((r) => r !== u.role)
+                        .map((r) => (
+                          <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                        ))}
                     </select>
                   ) : (
                     <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[u.role]}`}>
@@ -182,32 +299,16 @@ export default function PeopleSection({ user }: Props) {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   {isEditing ? (
-                    <>
-                      {/* Institution assignment — admin only */}
-                      {user.role === "admin" && (
-                        <select
-                          value={u.institution_id || ""}
-                          onChange={(e) => { if (e.target.value) assignInst(u.id, e.target.value); }}
-                          className="text-xs border border-gray-200 rounded px-1.5 py-0.5"
-                        >
-                          <option value="">No institution</option>
-                          {insts.map((i) => (
-                            <option key={i.id} value={i.id}>{i.name}</option>
-                          ))}
-                        </select>
-                      )}
-                      {/* Department assignment */}
-                      <select
-                        value={u.department_id || ""}
-                        onChange={(e) => { if (e.target.value) assignDept(u.id, e.target.value); }}
-                        className="text-xs border border-gray-200 rounded px-1.5 py-0.5"
-                      >
-                        <option value="">No dept</option>
-                        {depts.filter((d) => d.institution_id === u.institution_id).map((d) => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </select>
-                    </>
+                    <select
+                      value={u.department_id || ""}
+                      onChange={(e) => { if (e.target.value) assignDept(u.id, e.target.value); }}
+                      className="text-xs border border-gray-200 rounded px-1.5 py-0.5"
+                    >
+                      <option value="">No dept</option>
+                      {depts.filter((d) => d.institution_id === u.institution_id).map((d) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
                   ) : (
                     <span>{u.department_id ? deptMap.get(u.department_id)?.name || "" : ""}</span>
                   )}
@@ -217,6 +318,14 @@ export default function PeopleSection({ user }: Props) {
                       className="text-xs text-gray-300 hover:text-gray-500 ml-1"
                     >
                       Edit
+                    </button>
+                  )}
+                  {!isEditing && canRemove(u) && (
+                    <button
+                      onClick={() => removeUser(u)}
+                      className="text-xs text-red-400 hover:text-red-600 ml-1"
+                    >
+                      Remove
                     </button>
                   )}
                   {isEditing && (

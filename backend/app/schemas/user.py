@@ -22,10 +22,6 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-class AssignInstitution(BaseModel):
-    institution_id: uuid.UUID
-
-
 class AssignDepartment(BaseModel):
     department_id: uuid.UUID
 

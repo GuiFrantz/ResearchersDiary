@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
@@ -24,7 +24,10 @@ class Experience(SQLModel, table=True):
     organization: Optional[str] = Field(default=None)
     role_title: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.INSTITUTION)
+    visibility: Visibility = Field(
+        default=Visibility.INSTITUTION,
+        sa_column=Column(String, nullable=False),
+    )
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     is_current: bool = Field(default=False)

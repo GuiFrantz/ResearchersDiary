@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID
 from sqlmodel import Field, SQLModel
 
@@ -24,8 +24,14 @@ class Proposal(SQLModel, table=True):
     funding_body: Optional[str] = Field(default=None)
     reference: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
-    status: Optional[ProposalStatus] = Field(default=None)
-    visibility: Visibility = Field(default=Visibility.INSTITUTION)
+    status: Optional[ProposalStatus] = Field(
+        default=None,
+        sa_column=Column(String, nullable=True),
+    )
+    visibility: Visibility = Field(
+        default=Visibility.INSTITUTION,
+        sa_column=Column(String, nullable=False),
+    )
     submission_date: Optional[date] = Field(default=None)
     decision_date: Optional[date] = Field(default=None)
     project_id: Optional[uuid.UUID] = Field(

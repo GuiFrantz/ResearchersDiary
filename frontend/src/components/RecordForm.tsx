@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import type { AnyRecord } from "@/lib/types";
+import { GENERIC_FAIL_MSG, type AnyRecord } from "@/lib/types";
 
 export interface FieldDef {
   name: string;
@@ -73,7 +73,7 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
       }
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     } finally {
       setSaving(false);
     }
@@ -86,7 +86,7 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
       await api("DELETE", `${endpoint}/${record.id}`);
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
       setSaving(false);
     }
   }

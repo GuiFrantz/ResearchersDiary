@@ -1,7 +1,6 @@
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import get_current_user, require_role
@@ -9,7 +8,11 @@ from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Department, User
 from app.permissions import has_permission
-from app.queries import get_departments, get_institutions, get_users
+from app.queries import (
+    get_departments,
+    get_institutions,
+    get_users,
+)
 from app.schemas import DepartmentCreate, DepartmentRead, DepartmentUpdate
 
 router = APIRouter(prefix=ApiPrefix.DEPARTMENTS, tags=["Departments"])
@@ -46,12 +49,9 @@ async def create_department(
 
 @router.get("/", response_model=list[DepartmentRead])
 async def list_departments(
-    institution_id: Optional[uuid.UUID] = Query(default=None),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role == UserRole.ADMIN:
-        return await get_departments(session, institution_id=institution_id)
     if current_user.institution_id is not None:
         return await get_departments(
             session, institution_id=current_user.institution_id
@@ -112,6 +112,33 @@ async def update_department(
     await session.commit()
     await session.refresh(department)
     return department
+
+
+@router.post("/{department_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
+async def leave_department(
+    department_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.department_id != department_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=Errors.NOT_A_MEMBER
+        )
+
+    members = await get_users(session, department_id=department_id)
+    is_alone = len(members) <= 1
+
+    if current_user.role == UserRole.DEPARTMENT_HEAD and not is_alone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Errors.LAST_HEAD_CANNOT_LEAVE,
+        )
+
+    current_user.department_id = None
+    if current_user.role == UserRole.DEPARTMENT_HEAD:
+        current_user.role = UserRole.RESEARCHER
+    session.add(current_user)
+    await session.commit()
 
 
 @router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT)

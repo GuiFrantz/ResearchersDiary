@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.constants import UserRole
 from app.models import Department, Institution, User
 from app.permissions import _visibility_conditions
 
@@ -69,3 +70,24 @@ async def get_users(
         stmt = stmt.where(User.institution_id == institution_id)
     result = await session.exec(stmt)
     return result.first() if user_id is not None else result.all()
+
+
+async def get_user_by_email(
+    session: AsyncSession,
+    email: str,
+) -> User | None:
+    result = await session.exec(select(User).where(User.email == email))
+    return result.first()
+
+
+async def get_department_head(
+    session: AsyncSession,
+    department_id: uuid.UUID,
+) -> User | None:
+    result = await session.exec(
+        select(User).where(
+            User.department_id == department_id,
+            User.role == UserRole.DEPARTMENT_HEAD,
+        )
+    )
+    return result.first()

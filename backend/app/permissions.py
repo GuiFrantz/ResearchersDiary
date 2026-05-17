@@ -21,9 +21,6 @@ async def _has_minimum_scope(
     institution_id: uuid.UUID | None = None,
     department_id: uuid.UUID | None = None,
 ) -> bool:
-    if current_user.role == UserRole.ADMIN:
-        return True
-
     if department_id is not None:
         result = await session.exec(
             select(Department).where(Department.id == department_id)
@@ -87,10 +84,6 @@ def _visibility_conditions(model_class, current_user: User) -> list:
                 model_class.user_id.in_(inst_user_ids),
             )
         )
-
-    # admin sees all non-private records
-    if current_user.role == UserRole.ADMIN:
-        conditions.append(model_class.visibility != Visibility.PRIVATE.value)
 
     return conditions
 

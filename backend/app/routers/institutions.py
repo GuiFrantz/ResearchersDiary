@@ -8,7 +8,10 @@ from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import Institution, User
 from app.permissions import has_permission
-from app.queries import get_institutions, get_users
+from app.queries import (
+    get_institutions,
+    get_users,
+)
 from app.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
 
 router = APIRouter(prefix=ApiPrefix.INSTITUTIONS, tags=["Institutions"])
@@ -18,10 +21,16 @@ router = APIRouter(prefix=ApiPrefix.INSTITUTIONS, tags=["Institutions"])
 async def create_institution(
     data: InstitutionCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(get_current_user),
 ):
     institution = Institution(**data.model_dump())
     session.add(institution)
+    await session.flush()
+
+    current_user.institution_id = institution.id
+    current_user.role = UserRole.INSTITUTION_HEAD
+    session.add(current_user)
+
     await session.commit()
     await session.refresh(institution)
     return institution
@@ -82,6 +91,40 @@ async def update_institution(
     await session.commit()
     await session.refresh(institution)
     return institution
+
+
+@router.post("/{institution_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
+async def leave_institution(
+    institution_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.institution_id != institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=Errors.NOT_A_MEMBER
+        )
+
+    members = await get_users(session, institution_id=institution_id)
+    is_alone = len(members) <= 1
+
+    if current_user.role == UserRole.INSTITUTION_HEAD and not is_alone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Errors.LAST_HEAD_CANNOT_LEAVE,
+        )
+
+    current_user.institution_id = None
+    current_user.department_id = None
+    current_user.role = UserRole.RESEARCHER
+    session.add(current_user)
+    await session.flush()
+
+    if is_alone:
+        institution = await get_institutions(session, institution_id)
+        if institution is not None:
+            await session.delete(institution)
+
+    await session.commit()
 
 
 @router.delete("/{institution_id}", status_code=status.HTTP_204_NO_CONTENT)

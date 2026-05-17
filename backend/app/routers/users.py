@@ -9,8 +9,13 @@ from app.constants import ApiPrefix, Errors, UserRole
 from app.database import get_session
 from app.models import User
 from app.permissions import has_permission
-from app.queries import get_departments, get_institutions, get_users
-from app.schemas import AssignDepartment, AssignInstitution, AssignRole, UserRead
+from app.queries import (
+    get_department_head,
+    get_departments,
+    get_user_by_email,
+    get_users,
+)
+from app.schemas import AssignDepartment, AssignRole, UserRead
 
 router = APIRouter(prefix=ApiPrefix.USERS, tags=["Users"])
 
@@ -22,11 +27,6 @@ async def list_users(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role == UserRole.ADMIN:
-        return await get_users(
-            session, department_id=department_id, institution_id=institution_id
-        )
-
     if department_id is not None:
         department = await get_departments(session, department_id)
         if (
@@ -52,6 +52,19 @@ async def list_users(
     return await get_users(session, user_id=current_user.id)
 
 
+@router.get("/find-user", response_model=UserRead)
+async def find_user(
+    email: str = Query(..., min_length=1),
+    session: AsyncSession = Depends(get_session),
+):
+    user = await get_user_by_email(session, email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
+        )
+    return user
+
+
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: uuid.UUID,
@@ -63,52 +76,6 @@ async def get_user(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
     return user
-
-
-@router.put("/{user_id}/institution", response_model=UserRead)
-async def assign_institution(
-    user_id: uuid.UUID,
-    data: AssignInstitution,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
-):
-    target_user = await get_users(session, user_id=user_id)
-    if target_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
-        )
-
-    institution = await get_institutions(session, data.institution_id)
-    if institution is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
-        )
-
-    if not await has_permission(
-        current_user,
-        UserRole.INSTITUTION_HEAD,
-        session,
-        institution_id=data.institution_id,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Errors.INSUFFICIENT_PERMISSIONS,
-        )
-
-    if (
-        target_user.institution_id is not None
-        and target_user.institution_id != data.institution_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.USER_ALREADY_IN_INSTITUTION,
-        )
-
-    target_user.institution_id = data.institution_id
-    session.add(target_user)
-    await session.commit()
-    await session.refresh(target_user)
-    return target_user
 
 
 @router.delete("/{user_id}/institution", status_code=status.HTTP_204_NO_CONTENT)
@@ -123,10 +90,16 @@ async def unassign_institution(
             status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
         )
 
+    if target_user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Errors.BAD_REQUEST,
+        )
+
     if target_user.institution_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.USER_NOT_IN_ANY_INSTITUTION,
+            detail=Errors.NOT_A_MEMBER,
         )
 
     if not await has_permission(
@@ -142,6 +115,7 @@ async def unassign_institution(
 
     target_user.institution_id = None
     target_user.department_id = None
+    target_user.role = UserRole.RESEARCHER
     session.add(target_user)
     await session.commit()
 
@@ -179,7 +153,7 @@ async def assign_department(
     if target_user.institution_id != department.institution_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.USER_NOT_IN_INSTITUTION,
+            detail=Errors.NOT_A_MEMBER,
         )
 
     target_user.department_id = data.department_id
@@ -189,51 +163,16 @@ async def assign_department(
     return target_user
 
 
-@router.delete("/{user_id}/department", status_code=status.HTTP_204_NO_CONTENT)
-async def unassign_department(
-    user_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.DEPARTMENT_HEAD)),
-):
-    target_user = await get_users(session, user_id=user_id)
-    if target_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.USER_NOT_FOUND
-        )
-
-    if target_user.department_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.USER_NOT_IN_ANY_DEPARTMENT,
-        )
-
-    if not await has_permission(
-        current_user,
-        UserRole.DEPARTMENT_HEAD,
-        session,
-        department_id=target_user.department_id,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Errors.INSUFFICIENT_PERMISSIONS,
-        )
-
-    target_user.department_id = None
-    session.add(target_user)
-    await session.commit()
-
-
 @router.put("/{user_id}/role", response_model=UserRead)
 async def assign_role(
     user_id: uuid.UUID,
     data: AssignRole,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
+    current_user: User = Depends(get_current_user),
 ):
     if data.role not in ROLE_HIERARCHY:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.INVALID_ROLE,
+            status_code=status.HTTP_400_BAD_REQUEST, detail=Errors.INVALID_ROLE
         )
 
     target_user = await get_users(session, user_id=user_id)
@@ -245,15 +184,16 @@ async def assign_role(
     if target_user.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.INSUFFICIENT_PERMISSIONS,
+            detail=Errors.BAD_REQUEST,
         )
 
-    if current_user.role != UserRole.ADMIN:
-        if ROLE_HIERARCHY[data.role] >= ROLE_HIERARCHY[current_user.role]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=Errors.INSUFFICIENT_PERMISSIONS,
-            )
+    if target_user.institution_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Errors.NOT_A_MEMBER,
+        )
+
+    if data.role == UserRole.INSTITUTION_HEAD:
         if not await has_permission(
             current_user,
             UserRole.INSTITUTION_HEAD,
@@ -264,8 +204,52 @@ async def assign_role(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=Errors.INSUFFICIENT_PERMISSIONS,
             )
+        current_user.role = UserRole.RESEARCHER
+        target_user.role = UserRole.INSTITUTION_HEAD
+        session.add_all([current_user, target_user])
+        await session.commit()
+        await session.refresh(target_user)
+        return target_user
 
-    target_user.role = data.role
+    if data.role == UserRole.DEPARTMENT_HEAD:
+        if target_user.department_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Errors.NOT_A_MEMBER,
+            )
+        if not await has_permission(
+            current_user,
+            UserRole.DEPARTMENT_HEAD,
+            session,
+            department_id=target_user.department_id,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=Errors.INSUFFICIENT_PERMISSIONS,
+            )
+        current_dept_head = await get_department_head(
+            session, target_user.department_id
+        )
+        if current_dept_head is not None and current_dept_head.id != target_user.id:
+            current_dept_head.role = UserRole.RESEARCHER
+            session.add(current_dept_head)
+        target_user.role = UserRole.DEPARTMENT_HEAD
+        session.add(target_user)
+        await session.commit()
+        await session.refresh(target_user)
+        return target_user
+
+    if not await has_permission(
+        current_user,
+        UserRole.INSTITUTION_HEAD,
+        session,
+        institution_id=target_user.institution_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=Errors.INSUFFICIENT_PERMISSIONS,
+        )
+    target_user.role = UserRole.RESEARCHER
     session.add(target_user)
     await session.commit()
     await session.refresh(target_user)
