@@ -18,7 +18,7 @@ from app.schemas import DepartmentCreate, DepartmentRead, DepartmentUpdate
 router = APIRouter(prefix=ApiPrefix.DEPARTMENTS, tags=["Departments"])
 
 
-@router.post("/", response_model=DepartmentRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DepartmentRead, status_code=status.HTTP_201_CREATED)
 async def create_department(
     data: DepartmentCreate,
     session: AsyncSession = Depends(get_session),
@@ -47,7 +47,7 @@ async def create_department(
     return department
 
 
-@router.get("/", response_model=list[DepartmentRead])
+@router.get("", response_model=list[DepartmentRead])
 async def list_departments(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

@@ -20,7 +20,7 @@ from app.schemas import AssignDepartment, AssignRole, UserRead
 router = APIRouter(prefix=ApiPrefix.USERS, tags=["Users"])
 
 
-@router.get("/", response_model=list[UserRead])
+@router.get("", response_model=list[UserRead])
 async def list_users(
     institution_id: Optional[uuid.UUID] = Query(default=None),
     department_id: Optional[uuid.UUID] = Query(default=None),

@@ -132,7 +132,7 @@ export default function InviteForm({ user, onCreated }: Props) {
 
     setSubmitting(true);
     try {
-      await api("POST", "/api/invitations/", payload);
+      await api("POST", "/api/invitations", payload);
       setEmailInput("");
       setRecipient(null);
       setDepartmentId("");

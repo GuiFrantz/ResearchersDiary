@@ -67,7 +67,7 @@ async def _enrich(
     return out
 
 
-@router.post("/", response_model=InvitationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=InvitationRead, status_code=status.HTTP_201_CREATED)
 async def create_invitation(
     data: InvitationCreate,
     session: AsyncSession = Depends(get_session),

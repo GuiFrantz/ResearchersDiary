@@ -145,7 +145,7 @@ export default function ManagementSection({ user }: Props) {
     if (!deptName.trim() || !user.institution_id) return;
     setMessage("");
     try {
-      await api("POST", "/api/departments/", {
+      await api("POST", "/api/departments", {
         institution_id: user.institution_id,
         name: deptName.trim(),
         code: deptCode.trim() || null,

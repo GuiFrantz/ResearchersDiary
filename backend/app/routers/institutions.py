@@ -17,7 +17,7 @@ from app.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
 router = APIRouter(prefix=ApiPrefix.INSTITUTIONS, tags=["Institutions"])
 
 
-@router.post("/", response_model=InstitutionRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=InstitutionRead, status_code=status.HTTP_201_CREATED)
 async def create_institution(
     data: InstitutionCreate,
     session: AsyncSession = Depends(get_session),
@@ -36,7 +36,7 @@ async def create_institution(
     return institution
 
 
-@router.get("/", response_model=list[InstitutionRead])
+@router.get("", response_model=list[InstitutionRead])
 async def list_institutions(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

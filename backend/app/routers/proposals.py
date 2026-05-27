@@ -13,7 +13,7 @@ from app.schemas import ProposalCreate, ProposalRead, ProposalUpdate
 router = APIRouter(prefix=ApiPrefix.PROPOSALS, tags=["Proposals"])
 
 
-@router.post("/", response_model=ProposalRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProposalRead, status_code=status.HTTP_201_CREATED)
 async def create_proposal(
     data: ProposalCreate,
     session: AsyncSession = Depends(get_session),
@@ -26,7 +26,7 @@ async def create_proposal(
     return proposal
 
 
-@router.get("/", response_model=list[ProposalRead])
+@router.get("", response_model=list[ProposalRead])
 async def list_proposals(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

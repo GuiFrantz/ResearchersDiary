@@ -18,7 +18,7 @@ export default function CreateInstitutionForm({ onCreated }: Props) {
     setError("");
     setSubmitting(true);
     try {
-      await api("POST", "/api/institutions/", { name: name.trim() });
+      await api("POST", "/api/institutions", { name: name.trim() });
       setName("");
       onCreated();
     } catch (err: unknown) {

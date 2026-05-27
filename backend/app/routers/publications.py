@@ -13,7 +13,7 @@ from app.schemas import PublicationCreate, PublicationRead, PublicationUpdate
 router = APIRouter(prefix=ApiPrefix.PUBLICATIONS, tags=["Publications"])
 
 
-@router.post("/", response_model=PublicationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PublicationRead, status_code=status.HTTP_201_CREATED)
 async def create_publication(
     data: PublicationCreate,
     session: AsyncSession = Depends(get_session),
@@ -26,7 +26,7 @@ async def create_publication(
     return publication
 
 
-@router.get("/", response_model=list[PublicationRead])
+@router.get("", response_model=list[PublicationRead])
 async def list_publications(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

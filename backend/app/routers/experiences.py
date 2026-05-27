@@ -13,7 +13,7 @@ from app.schemas import ExperienceCreate, ExperienceRead, ExperienceUpdate
 router = APIRouter(prefix=ApiPrefix.EXPERIENCES, tags=["Experiences"])
 
 
-@router.post("/", response_model=ExperienceRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ExperienceRead, status_code=status.HTTP_201_CREATED)
 async def create_experience(
     data: ExperienceCreate,
     session: AsyncSession = Depends(get_session),
@@ -26,7 +26,7 @@ async def create_experience(
     return experience
 
 
-@router.get("/", response_model=list[ExperienceRead])
+@router.get("", response_model=list[ExperienceRead])
 async def list_experiences(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

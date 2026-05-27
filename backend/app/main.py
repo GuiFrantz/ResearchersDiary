@@ -19,6 +19,7 @@ from app.routers import users as users_router
 app = FastAPI(
     title=APP_TITLE,
     version=APP_VERSION,
+    redirect_slashes=False,
 )
 
 cors_origins = [
