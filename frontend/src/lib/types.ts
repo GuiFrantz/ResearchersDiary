@@ -74,6 +74,7 @@ export interface Publication {
   publisher: string | null;
   doi: string | null;
   url: string | null;
+  abstract: string | null;
   status: string | null;
   visibility: Visibility;
   is_imported: boolean;
@@ -129,6 +130,54 @@ export interface ExportRequest {
   project_ids: string[];
   proposal_ids: string[];
   experience_ids: string[];
+}
+
+export interface OrcidWork {
+  title: string;
+  type: string | null;
+  publication_date: string | null;
+  publisher: string | null;
+  doi: string | null;
+  url: string | null;
+  abstract: string | null;
+}
+
+export interface OrcidFunding {
+  title: string;
+  agency: string | null;
+  grant_number: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface OrcidEmployment {
+  organization: string;
+  role_title: string | null;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+}
+
+export interface OrcidPerson {
+  name: string | null;
+  biography: string | null;
+  country: string | null;
+  keywords: string[];
+}
+
+export interface OrcidPreviewResult {
+  person: OrcidPerson | null;
+  publications: OrcidWork[];
+  projects: OrcidFunding[];
+  experiences: OrcidEmployment[];
+}
+
+export interface OrcidImportResult {
+  publications_imported: number;
+  projects_imported: number;
+  experiences_imported: number;
+  skipped: number;
 }
 
 // Reports

@@ -14,6 +14,7 @@ class PublicationCreate(BaseModel):
     publisher: Optional[str] = None
     doi: Optional[str] = None
     url: Optional[str] = None
+    abstract: Optional[str] = None
     status: Optional[str] = None
     visibility: Visibility = Visibility.INSTITUTION
     is_imported: bool = False
@@ -26,6 +27,7 @@ class PublicationUpdate(BaseModel):
     publisher: Optional[str] = None
     doi: Optional[str] = None
     url: Optional[str] = None
+    abstract: Optional[str] = None
     status: Optional[str] = None
     visibility: Optional[Visibility] = None
     is_imported: Optional[bool] = None
@@ -42,6 +44,7 @@ class PublicationRead(BaseModel):
     publisher: Optional[str]
     doi: Optional[str]
     url: Optional[str]
+    abstract: Optional[str]
     status: Optional[str]
     visibility: Visibility
     is_imported: bool

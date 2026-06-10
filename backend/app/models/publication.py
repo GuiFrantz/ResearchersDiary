@@ -28,6 +28,7 @@ class Publication(SQLModel, table=True):
         default=None, sa_column=Column(String, unique=True, nullable=True)
     )
     url: Optional[str] = Field(default=None)
+    abstract: Optional[str] = Field(default=None)
     status: Optional[str] = Field(default=None)
     visibility: Visibility = Field(
         default=Visibility.INSTITUTION,

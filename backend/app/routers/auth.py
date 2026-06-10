@@ -11,7 +11,7 @@ from app.auth import (
 from app.constants import ApiPrefix, AuthProvider, Errors
 from app.database import get_session
 from app.models import User
-from app.schemas import Token, UserRead, UserRegister, UserLogin
+from app.schemas import Token, UserLogin, UserProfileUpdate, UserRead, UserRegister
 
 router = APIRouter(prefix=ApiPrefix.AUTH, tags=["Auth"])
 
@@ -43,7 +43,9 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     result = await session.exec(select(User).where(User.email == data.email))
     user = result.first()
 
-    if user is None or not verify_password(data.password.get_secret_value(), user.password_hash):
+    if user is None or not verify_password(
+        data.password.get_secret_value(), user.password_hash
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=Errors.INVALID_CREDENTIALS,
@@ -54,4 +56,21 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
 
 @router.get("/me", response_model=UserRead)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.put("/me", response_model=UserRead)
+async def update_me(
+    data: UserProfileUpdate,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    update = data.model_dump(exclude_unset=True)
+    if "name" in update:
+        current_user.name = update["name"] or None
+    if "orcid_id" in update:
+        current_user.orcid_id = update["orcid_id"] or None
+    session.add(current_user)
+    await session.commit()
+    await session.refresh(current_user)
     return current_user

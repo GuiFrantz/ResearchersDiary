@@ -33,6 +33,7 @@ const ENTITIES: Record<string, EntityConfig> = {
       { name: "publisher", label: "Publisher", type: "text" },
       { name: "doi", label: "DOI", type: "text" },
       { name: "url", label: "URL", type: "text" },
+      { name: "abstract", label: "Abstract", type: "textarea" },
       { name: "publication_date", label: "Date", type: "date" },
       { name: "status", label: "Status", type: "text" },
       { name: "visibility", label: "Visibility", type: "select", opts: ["private", "institution"], required: true },
@@ -102,9 +103,9 @@ interface UnifiedRecord {
   entityKey: string;
 }
 
-interface Props { user: User; }
+interface Props { user: User; refreshKey?: number; }
 
-export default function LibrarySection({ user }: Props) {
+export default function LibrarySection({ user, refreshKey }: Props) {
   const [byEntity, setByEntity] = useState<Record<string, AnyRecord[]>>({});
   const [userMap, setUserMap] = useState<Map<string, User>>(new Map());
   const [deptMap, setDeptMap] = useState<Map<string, Department>>(new Map());
@@ -137,7 +138,7 @@ export default function LibrarySection({ user }: Props) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
 
   const all = useMemo<UnifiedRecord[]>(() => {
     const out: UnifiedRecord[] = [];

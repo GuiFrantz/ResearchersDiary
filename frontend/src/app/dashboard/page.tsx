@@ -9,12 +9,15 @@ import LibrarySection from "@/components/LibrarySection";
 import PeopleSection from "@/components/PeopleSection";
 import ManagementSection from "@/components/ManagementSection";
 import Inbox from "@/components/Inbox";
+import UserProfileModal from "@/components/UserProfileModal";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [section, setSection] = useState("library");
   const [loading, setLoading] = useState(true);
+  const [showProfile, setShowProfile] = useState(false);
+  const [libraryRefresh, setLibraryRefresh] = useState(0);
 
   const fetchUser = useCallback(async () => {
     const token = getToken();
@@ -55,7 +58,12 @@ export default function DashboardPage() {
         <span className="font-semibold text-gray-900 text-sm">Researcher's Diary</span>
         <div className="flex items-center gap-3">
           <Inbox onAccepted={fetchUser} />
-          <span className="text-sm text-gray-700 font-medium">{user.name ?? user.email}</span>
+          <button
+            onClick={() => setShowProfile(true)}
+            className="text-sm text-gray-700 font-medium hover:text-indigo-700 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {user.name ?? user.email}
+          </button>
           <button
             onClick={handleLogout}
             className="text-xs text-gray-400 hover:text-gray-600 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -73,12 +81,21 @@ export default function DashboardPage() {
         />
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 max-w-5xl">
-            {section === "library" && <LibrarySection user={user} />}
+            {section === "library" && <LibrarySection user={user} refreshKey={libraryRefresh} />}
             {section === "people" && <PeopleSection user={user} />}
             {section === "management" && <ManagementSection user={user} />}
           </div>
         </div>
       </div>
+
+      {showProfile && (
+        <UserProfileModal
+          user={user}
+          onClose={() => setShowProfile(false)}
+          onSaved={fetchUser}
+          onImported={() => setLibraryRefresh((v) => v + 1)}
+        />
+      )}
     </div>
   );
 }

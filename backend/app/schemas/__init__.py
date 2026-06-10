@@ -10,6 +10,7 @@ from .user import (
     AssignRole,
     Token,
     UserLogin,
+    UserProfileUpdate,
     UserRead,
     UserRegister,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "UserLogin",
     "Token",
     "UserRead",
+    "UserProfileUpdate",
     "AssignDepartment",
     "AssignRole",
     # Institution

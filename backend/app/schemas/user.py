@@ -22,6 +22,11 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    orcid_id: Optional[str] = None
+
+
 class AssignDepartment(BaseModel):
     department_id: uuid.UUID
 

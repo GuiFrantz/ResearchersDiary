@@ -38,3 +38,4 @@ class Project(SQLModel, table=True):
     budget: Optional[Decimal] = Field(
         default=None, sa_column=Column(Numeric(precision=15, scale=2), nullable=True)
     )
+    is_imported: bool = Field(default=False)

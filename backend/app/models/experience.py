@@ -31,3 +31,4 @@ class Experience(SQLModel, table=True):
     start_date: Optional[date] = Field(default=None)
     end_date: Optional[date] = Field(default=None)
     is_current: bool = Field(default=False)
+    is_imported: bool = Field(default=False)

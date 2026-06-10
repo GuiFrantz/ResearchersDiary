@@ -10,6 +10,7 @@ from app.routers import experiences as experiences_router
 from app.routers import exports as exports_router
 from app.routers import institutions as institutions_router
 from app.routers import invitations as invitations_router
+from app.routers import orcid as orcid_router
 from app.routers import projects as projects_router
 from app.routers import proposals as proposals_router
 from app.routers import publications as publications_router
@@ -45,6 +46,7 @@ app.include_router(publications_router.router)
 app.include_router(projects_router.router)
 app.include_router(proposals_router.router)
 app.include_router(experiences_router.router)
+app.include_router(orcid_router.router)
 app.include_router(exports_router.router)
 app.include_router(reports_router.router)
 

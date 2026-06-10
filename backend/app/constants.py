@@ -54,6 +54,7 @@ class ApiPrefix:
     PROPOSALS = "/api/proposals"
     EXPERIENCES = "/api/experiences"
     INVITATIONS = "/api/invitations"
+    ORCID = "/api/orcid"
 
 
 # HTTP Exception messages
@@ -67,6 +68,12 @@ class Errors:
     INSUFFICIENT_PERMISSIONS = "Insufficient permissions"
     BAD_REQUEST = "Invalid request"
     INVALID_ROLE = "Invalid role"
+
+    # ORCID
+    ORCID_INVALID_ID = "Invalid ORCID ID format"
+    ORCID_PROFILE_NOT_FOUND = "ORCID profile not found"
+    ORCID_UNAVAILABLE = "Could not reach ORCID"
+    ORCID_NOT_CONFIGURED = "ORCID import is not configured on the server"
 
     # Not found
     USER_NOT_FOUND = "User not found"
