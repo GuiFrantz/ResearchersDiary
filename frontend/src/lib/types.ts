@@ -4,20 +4,12 @@ export type ProjectStatus = "active" | "concluded" | "canceled";
 export type ProposalStatus = "draft" | "submitted" | "approved" | "denied";
 export type InvitationStatus = "pending" | "accepted" | "declined" | "cancelled" | "expired";
 
-export const ROLE_LABELS: Record<UserRole, string> = {
-  researcher: "Researcher",
-  department_head: "Dept Head",
-  institution_head: "Inst Head",
-};
-
-export const ROLE_LEVEL: Record<UserRole, number> = {
-  researcher: 0,
-  department_head: 1,
-  institution_head: 2,
-};
-
-export const NOT_AFFILIATED_MSG = "You're not in an institution.";
-export const GENERIC_FAIL_MSG = "Something went wrong";
+export interface NavItem {
+  id: string;
+  label: string;
+  icon: string;
+  minRole?: UserRole;
+}
 
 export interface Invitation {
   id: string;

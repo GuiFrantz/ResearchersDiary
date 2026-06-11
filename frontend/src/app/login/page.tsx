@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, setToken } from "@/lib/api";
-import { GENERIC_FAIL_MSG, type Token } from "@/lib/types";
+import { api, errMsg, setToken } from "@/lib/api";
+import { TEXT } from "@/lib/constants";
+import type { Token } from "@/lib/types";
+import { Banner, Button, Field, Input } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,103 +16,88 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isRegister = mode === "register";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      if (mode === "register") {
-        const data = await api<Token>("POST", "/api/auth/register", {
-          email,
-          password,
-          name: name.trim() || null,
-        });
-        setToken(data.access_token);
-      } else {
-        const data = await api<Token>("POST", "/api/auth/login", { email, password });
-        setToken(data.access_token);
-      }
+      const data = isRegister
+        ? await api<Token>("POST", "/api/auth/register", { email, password, name: name.trim() || null })
+        : await api<Token>("POST", "/api/auth/login", { email, password });
+      setToken(data.access_token);
       router.push("/dashboard");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
+      setError(errMsg(err));
     } finally {
       setLoading(false);
     }
+  }
+
+  function tab(target: "login" | "register", label: string) {
+    return (
+      <button
+        type="button"
+        onClick={() => { setMode(target); setError(""); }}
+        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${mode === target ? "bg-white text-ink shadow-sm" : "text-dust-600"}`}
+      >
+        {label}
+      </button>
+    );
   }
 
   return (
     <div className="min-h-dvh flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Researcher&apos;s Diary</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{TEXT.common.appName}</h1>
         </div>
 
-        {/* Tab toggle */}
-        <div className="flex mb-4 bg-gray-100 rounded-lg p-0.5">
-          <button
-            type="button"
-            onClick={() => { setMode("login"); setError(""); }}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode("register"); setError(""); }}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${mode === "register" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
-          >
-            Register
-          </button>
+        <div className="flex mb-4 bg-dust-100 rounded-lg p-0.5">
+          {tab("login", TEXT.login.signIn)}
+          {tab("register", TEXT.login.register)}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
-          {mode === "register" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-dust-300 p-6">
+          {error && <Banner tone="error" className="mb-4">{error}</Banner>}
+          {isRegister && (
+            <Field label={TEXT.login.name}>
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Your name (optional)"
+                placeholder={TEXT.login.namePlaceholder}
+                className="w-full"
               />
-            </div>
+            </Field>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
+          <Field label={TEXT.login.email}>
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="you@example.com"
+              placeholder={TEXT.login.emailPlaceholder}
+              className="w-full"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
+          </Field>
+          <Field label={TEXT.login.password}>
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={mode === "register" ? 8 : undefined}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder={mode === "register" ? "At least 8 characters" : "Enter your password"}
+              minLength={isRegister ? 8 : undefined}
+              placeholder={isRegister ? TEXT.login.passwordHintRegister : TEXT.login.passwordHintLogin}
+              className="w-full"
             />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? (mode === "register" ? "Creating account..." : "Signing in...") : (mode === "register" ? "Create Account" : "Sign In")}
-          </button>
+          </Field>
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading
+              ? (isRegister ? TEXT.login.creatingAccount : TEXT.login.signingIn)
+              : (isRegister ? TEXT.login.createAccount : TEXT.login.signIn)}
+          </Button>
         </form>
       </div>
     </div>

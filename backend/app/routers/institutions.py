@@ -9,6 +9,7 @@ from app.database import get_session
 from app.models import Institution, User
 from app.permissions import has_permission
 from app.queries import (
+    get_departments,
     get_institutions,
     get_users,
 )
@@ -122,6 +123,11 @@ async def leave_institution(
     if is_alone:
         institution = await get_institutions(session, institution_id)
         if institution is not None:
+            departments = await get_departments(
+                session, institution_id=institution_id
+            )
+            for department in departments:
+                await session.delete(department)
             await session.delete(institution)
 
     await session.commit()
