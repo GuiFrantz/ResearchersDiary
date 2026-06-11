@@ -10,6 +10,8 @@ import {
   type UserRole,
 } from "@/lib/types";
 
+const allowedRoles: UserRole[] = ["researcher", "department_head"];
+
 interface Props {
   user: User;
   onCreated: () => void;
@@ -39,8 +41,6 @@ export default function InviteForm({ user, onCreated }: Props) {
     })();
   }, []);
 
-  const allowedRoles: UserRole[] = ["researcher", "department_head"];
-
   const instDepts = useMemo(
     () => depts.filter((d) => d.institution_id === user.institution_id),
     [depts, user.institution_id],
@@ -68,12 +68,10 @@ export default function InviteForm({ user, onCreated }: Props) {
     return null;
   }
 
-  function crossInstitutionNotice(): string | null {
-    if (!recipient) return null;
-    if (!isInstHead) return null;
-    if (recipient.institution_id === null) return null;
-    return "This user is currently in another institution. If they accept, they'll leave it. A user can only belong to one institution at a time.";
-  }
+  const crossInstitutionNotice =
+    recipient && isInstHead && recipient.institution_id !== null
+      ? "This user is currently in another institution. If they accept, they'll leave it. A user can only belong to one institution at a time."
+      : null;
 
   async function lookup() {
     const email = emailInput.trim().toLowerCase();
@@ -115,8 +113,11 @@ export default function InviteForm({ user, onCreated }: Props) {
       return;
     }
 
-    const notice = crossInstitutionNotice();
-    if (notice && !window.confirm(`${notice}\n\nSend invitation anyway?`)) return;
+    if (
+      crossInstitutionNotice &&
+      !window.confirm(`${crossInstitutionNotice}\n\nSend invitation anyway?`)
+    )
+      return;
 
     const payload: Record<string, string | null> = {
       recipient_id: recipient.id,
@@ -206,9 +207,9 @@ export default function InviteForm({ user, onCreated }: Props) {
         <div className="text-xs text-red-600">{lookupError}</div>
       )}
 
-      {crossInstitutionNotice() && (
+      {crossInstitutionNotice && (
         <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-          ⚠ {crossInstitutionNotice()}
+          ⚠ {crossInstitutionNotice}
         </div>
       )}
 

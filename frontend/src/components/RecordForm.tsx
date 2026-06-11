@@ -22,7 +22,7 @@ interface Props {
   viewOnly?: boolean;
 }
 
-export default function RecordForm({ entity, endpoint, fields, record, onClose, onSaved, viewOnly }: Props) {
+export default function RecordForm({ entity, endpoint, fields, record, onClose, onSaved, viewOnly = false }: Props) {
   const isEdit = record !== null;
   const [values, setValues] = useState<Record<string, string | boolean>>(() => {
     if (!record) {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { GENERIC_FAIL_MSG } from "@/lib/types";
 
 interface Props {
   onCreated: () => void;
@@ -22,7 +23,7 @@ export default function CreateInstitutionForm({ onCreated }: Props) {
       setName("");
       onCreated();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create institution");
+      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     } finally {
       setSubmitting(false);
     }

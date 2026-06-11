@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth import (
@@ -8,9 +7,10 @@ from app.auth import (
     hash_password,
     verify_password,
 )
-from app.constants import ApiPrefix, AuthProvider, Errors
+from app.constants import ApiPrefix, Errors
 from app.database import get_session
 from app.models import User
+from app.queries import get_user_by_email
 from app.schemas import Token, UserLogin, UserProfileUpdate, UserRead, UserRegister
 
 router = APIRouter(prefix=ApiPrefix.AUTH, tags=["Auth"])
@@ -18,8 +18,7 @@ router = APIRouter(prefix=ApiPrefix.AUTH, tags=["Auth"])
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegister, session: AsyncSession = Depends(get_session)):
-    result = await session.exec(select(User).where(User.email == data.email))
-    if result.first() is not None:
+    if await get_user_by_email(session, data.email) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Errors.EMAIL_ALREADY_REGISTERED,
@@ -29,7 +28,6 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
         email=data.email,
         name=data.name,
         password_hash=hash_password(data.password.get_secret_value()),
-        auth_provider=AuthProvider.LOCAL,
     )
     session.add(user)
     await session.commit()
@@ -40,8 +38,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
 
 @router.post("/login", response_model=Token)
 async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
-    result = await session.exec(select(User).where(User.email == data.email))
-    user = result.first()
+    user = await get_user_by_email(session, data.email)
 
     if user is None or not verify_password(
         data.password.get_secret_value(), user.password_hash

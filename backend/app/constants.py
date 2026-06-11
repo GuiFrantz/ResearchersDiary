@@ -17,11 +17,6 @@ class Visibility(str, Enum):
     INSTITUTION = "institution"
 
 
-class AuthProvider(str, Enum):
-    LOCAL = "local"
-    GOOGLE = "google"
-
-
 class ProjectStatus(str, Enum):
     ACTIVE = "active"
     CONCLUDED = "concluded"

@@ -175,7 +175,7 @@ export default function UserProfileModal({ user, onClose, onSaved, onImported }:
                 disabled={saving || importing}
                 className="shrink-0 text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
-                {importing ? "Searching…" : "Import"}
+                {importing ? "Searching..." : "Import"}
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-1">Import publications, projects and experiences from ORCID.</p>

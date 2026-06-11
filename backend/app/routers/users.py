@@ -49,7 +49,7 @@ async def list_users(
 
     if current_user.institution_id is not None:
         return await get_users(session, institution_id=current_user.institution_id)
-    return await get_users(session, user_id=current_user.id)
+    return [current_user]
 
 
 @router.get("/find-user", response_model=UserRead)

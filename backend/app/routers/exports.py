@@ -38,10 +38,10 @@ async def export_selection(
     payload = ExportResponse(
         exported_at=datetime.now(timezone.utc),
         user=current_user,
-        publications=list(publications),
-        projects=list(projects),
-        proposals=list(proposals),
-        experiences=list(experiences),
+        publications=publications,
+        projects=projects,
+        proposals=proposals,
+        experiences=experiences,
     )
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")

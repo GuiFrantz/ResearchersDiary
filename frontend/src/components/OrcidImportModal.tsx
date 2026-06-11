@@ -205,7 +205,7 @@ export default function OrcidImportModal({ orcidId, preview, onClose, onImported
                 disabled={loading || totalFound === 0}
                 className="text-sm px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? "Importing…" : `Import ${totalFound}`}
+                {loading ? "Importing..." : `Import ${totalFound}`}
               </button>
             </>
           )}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken } from "@/lib/api";
-import type { Token } from "@/lib/types";
+import { GENERIC_FAIL_MSG, type Token } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function LoginPage() {
       }
       router.push("/dashboard");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (mode === "register" ? "Registration failed" : "Login failed"));
+      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
     } finally {
       setLoading(false);
     }

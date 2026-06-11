@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date
 from typing import Optional
 from uuid import uuid4
 
@@ -35,4 +35,3 @@ class Publication(SQLModel, table=True):
         sa_column=Column(String, nullable=False),
     )
     is_imported: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)

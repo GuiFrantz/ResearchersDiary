@@ -53,7 +53,7 @@ async def _has_minimum_scope(
     return True
 
 
-def _visibility_conditions(model_class, current_user: User) -> list:
+def visibility_conditions(model_class, current_user: User) -> list:
     role_level = ROLE_HIERARCHY.get(current_user.role, 0)
     conditions = [model_class.user_id == current_user.id]
 

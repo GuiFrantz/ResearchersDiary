@@ -42,7 +42,6 @@ class UserRead(BaseModel):
     email: str
     name: Optional[str]
     role: UserRole
-    position_title: Optional[str]
     orcid_id: Optional[str]
     institution_id: Optional[uuid.UUID]
     department_id: Optional[uuid.UUID]

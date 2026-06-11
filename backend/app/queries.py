@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.constants import UserRole
 from app.models import Department, Institution, User
-from app.permissions import _visibility_conditions
+from app.permissions import visibility_conditions
 
 
 async def get_records(
@@ -20,7 +20,7 @@ async def get_records(
     if owner_only:
         stmt = select(model_class).where(model_class.user_id == current_user.id)
     else:
-        conditions = _visibility_conditions(model_class, current_user)
+        conditions = visibility_conditions(model_class, current_user)
         stmt = select(model_class).where(or_(*conditions))
     if record_id is not None:
         stmt = stmt.where(model_class.id == record_id)

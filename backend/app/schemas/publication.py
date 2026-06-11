@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -17,7 +17,6 @@ class PublicationCreate(BaseModel):
     abstract: Optional[str] = None
     status: Optional[str] = None
     visibility: Visibility = Visibility.INSTITUTION
-    is_imported: bool = False
 
 
 class PublicationUpdate(BaseModel):
@@ -30,7 +29,6 @@ class PublicationUpdate(BaseModel):
     abstract: Optional[str] = None
     status: Optional[str] = None
     visibility: Optional[Visibility] = None
-    is_imported: Optional[bool] = None
 
 
 class PublicationRead(BaseModel):
@@ -47,5 +45,3 @@ class PublicationRead(BaseModel):
     abstract: Optional[str]
     status: Optional[str]
     visibility: Visibility
-    is_imported: bool
-    created_at: datetime

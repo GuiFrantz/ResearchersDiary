@@ -41,7 +41,6 @@ export interface User {
   email: string;
   name: string | null;
   role: UserRole;
-  position_title: string | null;
   orcid_id: string | null;
   institution_id: string | null;
   department_id: string | null;
@@ -77,8 +76,6 @@ export interface Publication {
   abstract: string | null;
   status: string | null;
   visibility: Visibility;
-  is_imported: boolean;
-  created_at: string;
 }
 
 export interface Project {

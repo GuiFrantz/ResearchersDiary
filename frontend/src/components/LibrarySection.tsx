@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
 import { api, apiBlob } from "@/lib/api";
-import type {
-  User, Department, AnyRecord, ExportRequest,
+import {
+  GENERIC_FAIL_MSG,
+  type User, type Department, type AnyRecord, type ExportRequest,
 } from "@/lib/types";
 import RecordForm, { type FieldDef } from "./RecordForm";
 
@@ -113,6 +114,7 @@ export default function LibrarySection({ user, refreshKey }: Props) {
   const [editing, setEditing] = useState<{ entityKey: string; record: AnyRecord | null; viewOnly: boolean } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [newOpen, setNewOpen] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   useEffect(() => {
     async function loadContext() {
@@ -160,6 +162,7 @@ export default function LibrarySection({ user, refreshKey }: Props) {
   }
 
   async function handleExport() {
+    setExportError("");
     const body: ExportRequest = { publication_ids: [], project_ids: [], proposal_ids: [], experience_ids: [] };
     const ownIdToEntity = new Map<string, string>();
     for (const u of ownAll) ownIdToEntity.set(u.record.id, u.entityKey);
@@ -177,7 +180,9 @@ export default function LibrarySection({ user, refreshKey }: Props) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {}
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
+    }
   }
 
   function RecordRow({ item, isOwn }: { item: UnifiedRecord; isOwn: boolean }) {
@@ -268,6 +273,10 @@ export default function LibrarySection({ user, refreshKey }: Props) {
           </div>
         </div>
       </div>
+
+      {exportError && (
+        <p className="text-xs text-red-600 mb-2">{exportError}</p>
+      )}
 
       {loading ? (
         <p className="text-sm text-gray-400 py-4">Loading...</p>

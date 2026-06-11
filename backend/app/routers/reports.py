@@ -48,14 +48,13 @@ async def _fetch_visible_for_dept(
     model,
     dept_user_ids: list[uuid.UUID],
     session: AsyncSession,
-    *,
-    include_private: bool = False,
 ):
     if not dept_user_ids:
         return []
-    stmt = select(model).where(model.user_id.in_(dept_user_ids))
-    if not include_private:
-        stmt = stmt.where(model.visibility != Visibility.PRIVATE)
+    stmt = select(model).where(
+        model.user_id.in_(dept_user_ids),
+        model.visibility != Visibility.PRIVATE,
+    )
     result = await session.exec(stmt)
     return result.all()
 
@@ -69,7 +68,7 @@ async def _build_dept_stats(
 
     # All users in this department
     result = await session.exec(select(User).where(User.department_id == dept_id))
-    dept_users: list[User] = list(result.all())
+    dept_users = result.all()
     dept_user_ids = [u.id for u in dept_users]
 
     publications = await _fetch_visible_for_dept(Publication, dept_user_ids, session)
@@ -211,7 +210,7 @@ async def get_institution_report(
     dept_result = await session.exec(
         select(Department).where(Department.institution_id == inst_id)
     )
-    departments: list[Department] = list(dept_result.all())
+    departments = dept_result.all()
 
     rollups: list[DepartmentRollup] = []
     total_researchers = 0
