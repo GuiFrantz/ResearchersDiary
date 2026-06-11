@@ -6,14 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.constants import APP_TITLE, APP_VERSION
 from app.routers import auth as auth_router
 from app.routers import departments as departments_router
-from app.routers import experiences as experiences_router
 from app.routers import exports as exports_router
 from app.routers import institutions as institutions_router
 from app.routers import invitations as invitations_router
 from app.routers import orcid as orcid_router
-from app.routers import projects as projects_router
-from app.routers import proposals as proposals_router
-from app.routers import publications as publications_router
+from app.routers import records as records_router
 from app.routers import reports as reports_router
 from app.routers import users as users_router
 
@@ -42,10 +39,8 @@ app.include_router(institutions_router.router)
 app.include_router(departments_router.router)
 app.include_router(users_router.router)
 app.include_router(invitations_router.router)
-app.include_router(publications_router.router)
-app.include_router(projects_router.router)
-app.include_router(proposals_router.router)
-app.include_router(experiences_router.router)
+for record_router in records_router.routers:
+    app.include_router(record_router)
 app.include_router(orcid_router.router)
 app.include_router(exports_router.router)
 app.include_router(reports_router.router)

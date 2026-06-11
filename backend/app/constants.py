@@ -88,7 +88,6 @@ class Errors:
     # Membership
     NOT_A_MEMBER = "You are not a member of this institution or department"
     LAST_HEAD_CANNOT_LEAVE = "You must assign your Head role to another member first"
-    INSTITUTION_HAS_USERS = "Institution still has assigned users"
     DEPARTMENT_HAS_USERS = "Department still has assigned users"
 
     # Invitations

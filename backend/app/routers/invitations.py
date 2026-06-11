@@ -244,7 +244,7 @@ async def accept_invitation(
     now = _now()
     if invitation.expires_at <= now:
         invitation.status = InvitationStatus.EXPIRED
-        invitation.answered_at = now
+        invitation.responded_at = now
         session.add(invitation)
         await session.commit()
         raise HTTPException(
@@ -299,7 +299,7 @@ async def accept_invitation(
     session.add(current_user)
 
     invitation.status = InvitationStatus.ACCEPTED
-    invitation.answered_at = now
+    invitation.responded_at = now
     session.add(invitation)
     await session.commit()
     await session.refresh(invitation)
@@ -327,7 +327,7 @@ async def decline_invitation(
         )
 
     invitation.status = InvitationStatus.DECLINED
-    invitation.answered_at = _now()
+    invitation.responded_at = _now()
     session.add(invitation)
     await session.commit()
 
@@ -360,6 +360,6 @@ async def cancel_invitation(
         )
 
     invitation.status = InvitationStatus.CANCELLED
-    invitation.answered_at = _now()
+    invitation.responded_at = _now()
     session.add(invitation)
     await session.commit()

@@ -104,7 +104,7 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-3">
+        <form id="record-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-3">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -188,13 +188,8 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
           {!viewOnly && (
             <button
               type="submit"
-              form=""
+              form="record-form"
               disabled={saving}
-              onClick={(e) => {
-                e.preventDefault();
-                const form = document.querySelector<HTMLFormElement>(".fixed form");
-                form?.requestSubmit();
-              }}
               className="text-sm px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
               {saving ? "Saving..." : isEdit ? "Update" : "Create"}

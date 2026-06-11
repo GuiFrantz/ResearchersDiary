@@ -64,7 +64,7 @@ class Invitation(SQLModel, table=True):
         default_factory=_default_expires_at,
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
-    answered_at: Optional[datetime] = Field(
+    responded_at: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
     )

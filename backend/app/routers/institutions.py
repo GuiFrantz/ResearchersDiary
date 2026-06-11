@@ -125,33 +125,3 @@ async def leave_institution(
             await session.delete(institution)
 
     await session.commit()
-
-
-@router.delete("/{institution_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_institution(
-    institution_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_role(UserRole.INSTITUTION_HEAD)),
-):
-    institution = await get_institutions(session, institution_id)
-    if institution is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=Errors.INSTITUTION_NOT_FOUND
-        )
-
-    if not await has_permission(
-        current_user, UserRole.INSTITUTION_HEAD, session, institution_id=institution.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Errors.INSUFFICIENT_PERMISSIONS,
-        )
-
-    if len(await get_users(session, institution_id=institution_id)) > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Errors.INSTITUTION_HAS_USERS,
-        )
-
-    await session.delete(institution)
-    await session.commit()
