@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
-import { GENERIC_FAIL_MSG, type AnyRecord } from "@/lib/types";
-
-export interface FieldDef {
-  name: string;
-  label: string;
-  type: "text" | "select" | "date" | "number" | "textarea" | "checkbox";
-  opts?: string[];
-  required?: boolean;
-}
+import { api, errMsg } from "@/lib/api";
+import { TEXT } from "@/lib/constants";
+import type { FieldDef } from "@/lib/entities";
+import type { AnyRecord } from "@/lib/types";
+import Drawer from "./Drawer";
+import { Banner, Button, Field, Input, Select, Textarea } from "./ui";
 
 interface Props {
   entity: string;
@@ -25,20 +21,17 @@ interface Props {
 export default function RecordForm({ entity, endpoint, fields, record, onClose, onSaved, viewOnly = false }: Props) {
   const isEdit = record !== null;
   const [values, setValues] = useState<Record<string, string | boolean>>(() => {
-    if (!record) {
-      const defaults: Record<string, string | boolean> = {};
-      for (const f of fields) {
-        if (f.type === "checkbox") defaults[f.name] = false;
-        else if (f.name === "visibility") defaults[f.name] = "institution";
-        else defaults[f.name] = "";
-      }
-      return defaults;
-    }
     const v: Record<string, string | boolean> = {};
     for (const f of fields) {
-      const val = (record as unknown as Record<string, unknown>)[f.name];
-      if (f.type === "checkbox") v[f.name] = Boolean(val);
-      else v[f.name] = val != null ? String(val) : "";
+      if (!record) {
+        if (f.type === "checkbox") v[f.name] = false;
+        else if (f.name === "visibility") v[f.name] = "institution";
+        else v[f.name] = "";
+      } else {
+        const val = (record as unknown as Record<string, unknown>)[f.name];
+        if (f.type === "checkbox") v[f.name] = Boolean(val);
+        else v[f.name] = val != null ? String(val) : "";
+      }
     }
     return v;
   });
@@ -57,146 +50,99 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
       const body: Record<string, unknown> = {};
       for (const f of fields) {
         const v = values[f.name];
-        if (f.type === "checkbox") {
-          body[f.name] = v;
-        } else if (f.type === "number") {
-          body[f.name] = v ? Number(v) : null;
-        } else {
-          body[f.name] = v || null;
-        }
+        if (f.type === "checkbox") body[f.name] = v;
+        else if (f.type === "number") body[f.name] = v ? Number(v) : null;
+        else body[f.name] = v || null;
       }
-
-      if (isEdit) {
-        await api("PUT", `${endpoint}/${record.id}`, body);
-      } else {
-        await api("POST", endpoint, body);
-      }
+      if (isEdit) await api("PUT", `${endpoint}/${record.id}`, body);
+      else await api("POST", endpoint, body);
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!record || !confirm(`Delete this ${entity}?`)) return;
+    if (!record || !confirm(TEXT.records.confirmDelete(entity))) return;
     setSaving(true);
     try {
       await api("DELETE", `${endpoint}/${record.id}`);
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : GENERIC_FAIL_MSG);
+      setError(errMsg(err));
       setSaving(false);
     }
   }
 
-  return (
+  const title = viewOnly ? entity : isEdit ? TEXT.records.editTitle(entity) : TEXT.records.newTitle(entity);
+
+  const footer = (
     <>
-      <div className="fixed inset-0 bg-black/20 z-30" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-40 flex flex-col border-l border-gray-200">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="font-semibold text-sm">
-            {viewOnly ? entity : isEdit ? `Edit ${entity}` : `New ${entity}`}
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">
-            &times;
-          </button>
-        </div>
-
-        <form id="record-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-3">
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
-          {fields.map((f) => (
-            <div key={f.name}>
-              {f.type === "checkbox" ? (
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(values[f.name])}
-                    onChange={(e) => set(f.name, e.target.checked)}
-                    disabled={viewOnly}
-                    className="rounded border-gray-300"
-                  />
-                  {f.label}
-                </label>
-              ) : (
-                <>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    {f.label}{f.required && <span className="text-red-400"> *</span>}
-                  </label>
-                  {f.type === "select" ? (
-                    <select
-                      value={String(values[f.name])}
-                      onChange={(e) => set(f.name, e.target.value)}
-                      required={f.required}
-                      disabled={viewOnly}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    >
-                      <option value="">—</option>
-                      {f.opts?.map((o) => (
-                        <option key={o} value={o}>{o}</option>
-                      ))}
-                    </select>
-                  ) : f.type === "textarea" ? (
-                    <textarea
-                      value={String(values[f.name])}
-                      onChange={(e) => set(f.name, e.target.value)}
-                      rows={3}
-                      disabled={viewOnly}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                  ) : (
-                    <input
-                      type={f.type}
-                      value={String(values[f.name])}
-                      onChange={(e) => set(f.name, e.target.value)}
-                      required={f.required}
-                      disabled={viewOnly}
-                      step={f.type === "number" ? "any" : undefined}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </form>
-
-        <div className="px-4 py-3 border-t border-gray-200 flex items-center gap-2">
-          {isEdit && !viewOnly && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={saving}
-              className="text-sm px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              Delete
-            </button>
-          )}
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            {viewOnly ? "Close" : "Cancel"}
-          </button>
-          {!viewOnly && (
-            <button
-              type="submit"
-              form="record-form"
-              disabled={saving}
-              className="text-sm px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
-              {saving ? "Saving..." : isEdit ? "Update" : "Create"}
-            </button>
-          )}
-        </div>
-      </div>
+      {isEdit && !viewOnly && (
+        <Button variant="danger" onClick={handleDelete} disabled={saving}>{TEXT.common.delete}</Button>
+      )}
+      <div className="flex-1" />
+      <Button variant="ghost" onClick={onClose}>{viewOnly ? TEXT.common.close : TEXT.common.cancel}</Button>
+      {!viewOnly && (
+        <Button type="submit" form="record-form" disabled={saving}>
+          {saving ? TEXT.common.saving : isEdit ? TEXT.common.save : TEXT.common.create}
+        </Button>
+      )}
     </>
+  );
+
+  return (
+    <Drawer title={title} onClose={onClose} footer={footer} formId="record-form" onSubmit={handleSubmit}>
+      {error && <Banner tone="error" className="mb-4">{error}</Banner>}
+      {fields.map((f) =>
+        f.type === "checkbox" ? (
+          <label key={f.name} className="flex items-center gap-2 text-sm cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={Boolean(values[f.name])}
+              onChange={(e) => set(f.name, e.target.checked)}
+              disabled={viewOnly}
+              className="size-4 accent-hunter"
+            />
+            {f.label}
+          </label>
+        ) : (
+          <Field key={f.name} label={<>{f.label}{f.required && <span className="text-clay"> *</span>}</>}>
+            {f.type === "select" ? (
+              <Select
+                value={String(values[f.name])}
+                onChange={(e) => set(f.name, e.target.value)}
+                required={f.required}
+                disabled={viewOnly}
+                className="w-full"
+              >
+                <option value="">—</option>
+                {f.opts?.map((o) => <option key={o} value={o}>{o}</option>)}
+              </Select>
+            ) : f.type === "textarea" ? (
+              <Textarea
+                value={String(values[f.name])}
+                onChange={(e) => set(f.name, e.target.value)}
+                rows={3}
+                disabled={viewOnly}
+                className="w-full"
+              />
+            ) : (
+              <Input
+                type={f.type}
+                value={String(values[f.name])}
+                onChange={(e) => set(f.name, e.target.value)}
+                required={f.required}
+                disabled={viewOnly}
+                step={f.type === "number" ? "any" : undefined}
+                className="w-full"
+              />
+            )}
+          </Field>
+        ),
+      )}
+    </Drawer>
   );
 }

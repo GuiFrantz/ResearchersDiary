@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken, setToken } from "@/lib/api";
-import type { User } from "@/lib/types";
-import Sidebar from "@/components/Sidebar";
+import { TEXT } from "@/lib/constants";
+import { useLoad } from "@/lib/hooks";
+import type { Invitation, User } from "@/lib/types";
 import LibrarySection from "@/components/LibrarySection";
-import PeopleSection from "@/components/PeopleSection";
 import ManagementSection from "@/components/ManagementSection";
-import Inbox from "@/components/Inbox";
+import PeopleSection from "@/components/PeopleSection";
+import Sidebar, { getNavItems } from "@/components/Sidebar";
 import UserProfileModal from "@/components/UserProfileModal";
+import { Loading } from "@/components/ui";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,14 +22,12 @@ export default function DashboardPage() {
   const [libraryRefresh, setLibraryRefresh] = useState(0);
 
   const fetchUser = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
+    if (!getToken()) {
       router.replace("/login");
       return;
     }
     try {
-      const u = await api<User>("GET", "/api/auth/me");
-      setUser(u);
+      setUser(await api<User>("GET", "/api/auth/me"));
     } catch {
       setToken(null);
       router.replace("/login");
@@ -35,9 +35,12 @@ export default function DashboardPage() {
     setLoading(false);
   }, [router]);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  useEffect(() => { fetchUser(); }, [fetchUser]);
+
+  const { data: invites, reload: refreshInvites } = useLoad(() =>
+    api<Invitation[]>("GET", "/api/invitations/received").catch(() => [] as Invitation[]),
+  );
+  const inviteCount = invites?.length ?? 0;
 
   function handleLogout() {
     setToken(null);
@@ -47,46 +50,63 @@ export default function DashboardPage() {
   if (loading || !user) {
     return (
       <div className="h-dvh flex items-center justify-center">
-        <p className="text-sm text-gray-400">Loading...</p>
+        <Loading />
       </div>
     );
   }
 
+  const navItems = getNavItems(user.role, user.institution_id);
+
   return (
     <div className="h-dvh flex flex-col overflow-hidden">
-      <div className="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between shrink-0 z-20">
-        <span className="font-semibold text-gray-900 text-sm">Researcher's Diary</span>
-        <div className="flex items-center gap-3">
-          <Inbox onAccepted={fetchUser} />
+      <div className="border-b border-dust-300 px-4 sm:px-6 h-14 flex items-center justify-between shrink-0 z-20">
+        <span className="text-sm font-semibold tracking-tight">{TEXT.common.appName}</span>
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <nav className="hidden md:flex items-stretch gap-5 self-stretch">
+            {navItems.map((item) => {
+              const active = section === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setSection(item.id)}
+                  className={`flex items-center text-sm px-1 border-b-2 transition-colors ${active
+                    ? "text-ink font-medium border-hunter"
+                    : "text-dust-600 hover:text-ink border-transparent"
+                    }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="hidden md:block w-px h-5 bg-dust-300" />
           <button
             onClick={() => setShowProfile(true)}
-            className="text-sm text-gray-700 font-medium hover:text-indigo-700 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors truncate max-w-[40vw] sm:max-w-none"
+            className="relative flex items-center gap-2.5 py-1 px-1.5 rounded-lg hover:bg-dust-100 transition-colors"
           >
-            {user.name ?? user.email}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-gray-400 hover:text-gray-600 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Log out
+            {inviteCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-fern border-2 border-dust-50" />
+            )}
+            <span className="text-sm font-medium truncate max-w-32 sm:max-w-none">
+              {user.name ?? user.email}
+            </span>
           </button>
         </div>
       </div>
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          role={user.role}
-          institutionId={user.institution_id}
-          current={section}
-          onNavigate={setSection}
-        />
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4 pb-24 md:p-6 max-w-5xl">
-            {section === "library" && <LibrarySection user={user} refreshKey={libraryRefresh} />}
-            {section === "people" && <PeopleSection user={user} />}
-            {section === "management" && <ManagementSection user={user} />}
-          </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-4 pb-24 md:px-14 md:pt-11">
+          {section === "library" && <LibrarySection user={user} refreshKey={libraryRefresh} />}
+          {section === "people" && <PeopleSection user={user} />}
+          {section === "management" && <ManagementSection user={user} />}
         </div>
       </div>
+
+      <Sidebar
+        role={user.role}
+        institutionId={user.institution_id}
+        current={section}
+        onNavigate={setSection}
+      />
 
       {showProfile && (
         <UserProfileModal
@@ -94,6 +114,8 @@ export default function DashboardPage() {
           onClose={() => setShowProfile(false)}
           onSaved={fetchUser}
           onImported={() => setLibraryRefresh((v) => v + 1)}
+          onLogout={handleLogout}
+          onInvitesChanged={refreshInvites}
         />
       )}
     </div>

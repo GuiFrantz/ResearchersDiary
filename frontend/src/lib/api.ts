@@ -1,6 +1,8 @@
+import { TEXT } from "./constants";
+
 const API_BASE = "";
 
-//Token Helpers
+// Token helpers
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("rd_token");
@@ -18,11 +20,11 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = unknown>(
-  method: string,
-  path: string,
-  body?: unknown,
-): Promise<T> {
+export function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : TEXT.common.genericFail;
+}
+
+async function request(method: string, path: string, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -32,7 +34,6 @@ export async function api<T = unknown>(
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
-    redirect: "follow",
   });
 
   if (!res.ok) {
@@ -44,30 +45,15 @@ export async function api<T = unknown>(
     throw new ApiError(res.status, message);
   }
 
+  return res;
+}
+
+export async function api<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await request(method, path, body);
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
-export async function apiBlob(
-  method: string,
-  path: string,
-  body?: unknown,
-): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  const token = getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (body) headers["Content-Type"] = "application/json";
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text);
-  }
-
-  return res.blob();
+export async function apiBlob(method: string, path: string, body?: unknown): Promise<Blob> {
+  return (await request(method, path, body)).blob();
 }
