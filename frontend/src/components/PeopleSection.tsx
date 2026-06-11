@@ -269,8 +269,8 @@ export default function PeopleSection({ user }: Props) {
                   {header}
                 </div>
               )}
-              <div className="flex items-center justify-between px-3 py-2.5 bg-white border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2.5 bg-white border border-gray-200 rounded-lg">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-gray-900">{u.name || "—"}</span>
                   {isEditing ? (
                     <select

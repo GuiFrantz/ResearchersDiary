@@ -46,21 +46,21 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-dvh flex items-center justify-center">
         <p className="text-sm text-gray-400">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <div className="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between shrink-0 z-20">
         <span className="font-semibold text-gray-900 text-sm">Researcher's Diary</span>
         <div className="flex items-center gap-3">
           <Inbox onAccepted={fetchUser} />
           <button
             onClick={() => setShowProfile(true)}
-            className="text-sm text-gray-700 font-medium hover:text-indigo-700 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-sm text-gray-700 font-medium hover:text-indigo-700 py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors truncate max-w-[40vw] sm:max-w-none"
           >
             {user.name ?? user.email}
           </button>
@@ -80,7 +80,7 @@ export default function DashboardPage() {
           onNavigate={setSection}
         />
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6 max-w-5xl">
+          <div className="p-4 pb-24 md:p-6 max-w-5xl">
             {section === "library" && <LibrarySection user={user} refreshKey={libraryRefresh} />}
             {section === "people" && <PeopleSection user={user} />}
             {section === "management" && <ManagementSection user={user} />}

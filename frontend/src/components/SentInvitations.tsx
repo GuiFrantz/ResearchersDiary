@@ -48,9 +48,9 @@ export default function SentInvitations({ refreshKey }: Props) {
           {items.map((inv) => (
             <li
               key={inv.id}
-              className="flex items-center justify-between text-xs px-2 py-1.5 bg-gray-50 rounded"
+              className="flex items-center justify-between gap-2 text-xs px-2 py-1.5 bg-gray-50 rounded"
             >
-              <div className="text-gray-700">
+              <div className="text-gray-700 min-w-0">
                 <span className="font-medium">{inv.recipient_name ?? "(user)"}</span>{" "}
                 · {ROLE_LABELS[inv.role] ?? inv.role}
                 {inv.department_name ? ` · ${inv.department_name}` : ""}
@@ -62,7 +62,7 @@ export default function SentInvitations({ refreshKey }: Props) {
               <button
                 disabled={busyId === inv.id}
                 onClick={() => cancel(inv.id)}
-                className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-50"
+                className="shrink-0 text-xs text-gray-400 hover:text-red-600 disabled:opacity-50"
               >
                 Cancel
               </button>

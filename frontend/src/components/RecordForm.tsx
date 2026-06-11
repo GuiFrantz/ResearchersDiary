@@ -94,7 +94,7 @@ export default function RecordForm({ entity, endpoint, fields, record, onClose, 
   return (
     <>
       <div className="fixed inset-0 bg-black/20 z-30" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-40 flex flex-col border-l border-gray-200">
+      <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-40 flex flex-col border-l border-gray-200">
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <h3 className="font-semibold text-sm">
             {viewOnly ? entity : isEdit ? `Edit ${entity}` : `New ${entity}`}
