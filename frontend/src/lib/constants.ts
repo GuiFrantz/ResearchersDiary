@@ -136,6 +136,7 @@ export const TEXT = {
     instReport: "Generate institution report",
     deptReportFile: "department_report.txt",
     instReportFile: "institution_report.txt",
+    reportGenerated: "Report generated",
     departments: (n: number) => `Departments · ${n}`,
     createDept: "Create new department",
     deptCreated: "Department created",

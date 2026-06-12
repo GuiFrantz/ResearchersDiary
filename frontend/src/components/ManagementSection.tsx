@@ -54,9 +54,11 @@ export default function ManagementSection({ user }: Props) {
       if (isDeptHead && user.department_id) {
         const r = await api<DepartmentReport>("GET", `/api/reports/department/${user.department_id}`);
         download(formatDeptReport(r), TEXT.management.deptReportFile);
+        notify(TEXT.management.reportGenerated, "success");
       } else if (isInstHead && user.institution_id) {
         const r = await api<InstitutionReport>("GET", `/api/reports/institution/${user.institution_id}`);
         download(formatInstReport(r), TEXT.management.instReportFile);
+        notify(TEXT.management.reportGenerated, "success");
       }
     } catch (err: unknown) {
       notify(errMsg(err), "error");
