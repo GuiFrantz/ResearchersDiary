@@ -73,7 +73,7 @@ export const TEXT = {
   library: {
     title: "Library",
     newRecord: "New record",
-    empty: "No records yet. Use New record to create one.",
+    empty: "No records yet.",
     export: (n: number) => `Export ${n}`,
     exportFilename: () => `personal_export_${new Date().toISOString().slice(0, 10)}.json`,
     yourRecords: (n: number) => `Your records · ${n}`,
@@ -86,7 +86,7 @@ export const TEXT = {
   },
   people: {
     title: "People",
-    noInstitution: "You're not in an institution yet. Create one or wait for an invitation.",
+    noInstitution: "Create an institution or wait for an invitation.",
     pendingSent: "Pending invitations sent",
     sendInvitation: "Send invitation",
     you: "you",
@@ -97,35 +97,18 @@ export const TEXT = {
     unknownInstitution: "Unknown Institution",
     confirmRoleChange(target: User, newRole: UserRole): string {
       const name = target.name || target.email;
-      const lines = [
-        `Change ${name}'s role from ${ROLE_LABELS[target.role]} to ${ROLE_LABELS[newRole]}?`,
-        "",
-      ];
-      if (ROLE_LEVEL[newRole] > ROLE_LEVEL[target.role]) {
-        lines.push("This is a promotion — they'll gain new permissions immediately.");
-      } else {
-        lines.push("This is a demotion — they'll lose their current permissions.");
-        if (target.role === "institution_head")
-          lines.push("If they're the only institution head with members remaining, the change will be blocked.");
-        if (target.role === "department_head")
-          lines.push("If they're the only department head with members remaining, the change will be blocked.");
-      }
-      return lines.join("\n");
+      return `Change ${name}'s role from ${ROLE_LABELS[target.role]} to ${ROLE_LABELS[newRole]}?`;
     },
     confirmRemove: (name: string) =>
       [
         `Remove ${name} from this institution?`,
         "",
-        "They will be cleared from this institution and any department.",
-        "Their personal records stay with them.",
+        "They will be removed from any department.",
       ].join("\n"),
     confirmLeave: [
       "Leave this institution?",
       "",
-      "You'll become unaffiliated and your role will reset to Researcher.",
-      "Your personal records stay with you.",
-      "If you're the last member, the institution and its departments will be deleted.",
-      "If you're the institution head, transfer the role before leaving.",
+      "If you're the last member, the institution and its departments will be deleted."
     ].join("\n"),
   },
   management: {
@@ -153,7 +136,7 @@ export const TEXT = {
     department: "Department",
     orcid: "ORCID iD",
     orcidPlaceholder: "0000-0000-0000-0000",
-    orcidHint: "Import publications, projects and experiences from ORCID.",
+    orcidHint: "Import your existing data from ORCID.",
     orcidInvalid: "Invalid ORCID iD format",
     orcidMissing: "Enter your ORCID iD",
     import: "Import",
@@ -195,10 +178,7 @@ export const TEXT = {
         (inv.department_name ? ` (${inv.department_name})` : "") + "?",
         "",
         `Your role will be set to ${ROLE_LABELS[inv.role]}.`,
-        "A user can only belong to one institution at a time:",
-        "  • If you're not in one yet, you'll join this one.",
         "  • If you're already in another institution, you'll leave it.",
-        "Your personal records (publications, projects, etc.) stay with you.",
       ].join("\n"),
   },
   sent: {
@@ -216,15 +196,14 @@ export const TEXT = {
     deptRequired: "Department (required)...",
     noDept: "No department",
     lookupFirst: "Look up a recipient first.",
-    pickDept: "Pick a department for the department-head invitation.",
+    pickDept: "Pick a department for the invitation.",
     selfInvite: "You can't invite yourself.",
     notInYourInstitution: "This user is not in your institution.",
     isInstHead: "You can't invite the institution head.",
     alreadyInDept: "This user is already in your department.",
     alreadyInInstitution: "This user is already in your institution.",
     crossInstitution:
-      "This user is currently in another institution. If they accept, they'll leave it. " +
-      "A user can only belong to one institution at a time.",
+      "This user is currently in another institution. If they accept, they'll leave it. ",
     confirmSendAnyway: (notice: string) => `${notice}\n\nSend invitation anyway?`,
   },
   institution: {

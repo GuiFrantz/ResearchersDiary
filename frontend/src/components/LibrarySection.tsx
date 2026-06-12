@@ -136,7 +136,6 @@ export default function LibrarySection({ user, refreshKey }: Props) {
             <Button variant="outline" onClick={handleExport}>{TEXT.library.export(selected.size)}</Button>
           )}
           <Button onClick={() => setNewOpen((v) => !v)} className="flex items-center gap-2">
-            <Icon name="plus" size={15} />
             {TEXT.library.newRecord}
           </Button>
           {newOpen && (
@@ -198,7 +197,7 @@ export default function LibrarySection({ user, refreshKey }: Props) {
                     checked={false}
                     owner={owner}
                     ownerDept={owner?.department_id ? deptMap.get(owner.department_id) : undefined}
-                    onToggle={() => {}}
+                    onToggle={() => { }}
                     onOpen={() => openEditor(item, false)}
                   />
                 );
