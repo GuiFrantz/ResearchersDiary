@@ -4,7 +4,7 @@ Researcher's Diary is a hierarchical scientific production management platform d
 
 Developed by **Guilherme Frantz** as a Final Year Project (FYP) / Trabalho Final de Curso (TFC).
 
-## Setup
+## Local Setup
 
 1. Clone the repository to your machine
 2. Copy `.env.example` to `.env` and replace the values
