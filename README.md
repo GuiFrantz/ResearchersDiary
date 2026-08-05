@@ -2,7 +2,7 @@
 
 Researcher's Diary is a hierarchical scientific production management platform designed to centralize academic metadata and streamline institutional reporting.
 
-Developed by **Guilherme Frantz** as a Final Year Project (FYP) / Trabalho Final de Curso (TFC).
+Developed by **Guilherme Frantz**.
 
 ## Local Setup
 
